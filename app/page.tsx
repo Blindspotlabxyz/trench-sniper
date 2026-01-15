@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Share2, Skull, Trophy } from 'lucide-react';
+import { Share2, Skull, Trophy, Activity } from 'lucide-react';
 
 const BRAND_COLOR = '#4e24cf';
 
@@ -71,20 +71,17 @@ export default function TrenchSniper() {
         }
       }
 
-      formatted.sort((a, b) => b.score - a.score);
-      setLeaderboard(formatted);
+      const sortedList = formatted.sort((a, b) => b.score - a.score);
+      setLeaderboard(sortedList);
 
-      // --- GLOBAL RANK LOGIC FIX ---
-      const currentHigh = Number(localStorage.getItem('trench_highscore') || 0);
-      if (currentHigh > 0) {
-        // Find by name first
-        const myIndex = formatted.findIndex(e => e.username.toLowerCase() === username.toLowerCase());
+      const mySavedBest = Number(localStorage.getItem('trench_highscore') || 0);
+      if (mySavedBest > 0 && sortedList.length > 0) {
+        const myIndex = sortedList.findIndex(e => e.username.toLowerCase() === username.toLowerCase());
         if (myIndex !== -1) {
           setGlobalRank(myIndex + 1);
         } else {
-          // Find where this score would sit in the list
-          const rankPos = formatted.findIndex(e => currentHigh > e.score);
-          setGlobalRank(rankPos !== -1 ? rankPos + 1 : formatted.length + 1);
+          const rankPos = sortedList.findIndex(e => mySavedBest > e.score);
+          setGlobalRank(rankPos !== -1 ? rankPos + 1 : sortedList.length + 1);
         }
       }
     } catch (e) {
@@ -202,12 +199,26 @@ export default function TrenchSniper() {
       touchAction: 'none', overflow: 'hidden' 
     }}>
       
-      <header style={{ textAlign: 'center', padding: '10px 0' }}>
+      {/* ONCHAIN INDICATOR AND HEADER */}
+      <header style={{ textAlign: 'center', padding: '10px 0', position: 'relative' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '2px' }}>
+            <div style={{ 
+                width: '6px', height: '6px', backgroundColor: '#ef4444', borderRadius: '50%',
+                animation: 'blink 1.5s infinite'
+            }} />
+            <span style={{ fontSize: '9px', color: '#ef4444', fontWeight: 'bold', letterSpacing: '1px' }}>ONCHAIN</span>
+        </div>
+        
         <h1 style={{ color: BRAND_COLOR, fontSize: '1.8rem', fontWeight: '900', margin: 0, fontStyle: 'italic', letterSpacing: '-2px' }}>TRENCH SNIPER</h1>
+        
         <div style={{ fontSize: '10px', color: '#444', fontWeight: 'bold', marginTop: '4px', display: 'flex', justifyContent: 'center', gap: '15px' }}>
             <span>PB: <span style={{color: BRAND_COLOR}}>{highScore}</span></span>
             {globalRank && <span>GLOBAL RANK: <span style={{color: '#fbbf24'}}>#{globalRank}</span></span>}
         </div>
+
+        <style>{`
+          @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+        `}</style>
       </header>
 
       <div style={{ flex: 1, width: '100%', maxWidth: '400px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
