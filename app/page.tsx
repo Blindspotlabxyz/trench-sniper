@@ -1,18 +1,17 @@
 'use client';
-
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Skull, ShieldCheck, X, Share2 } from 'lucide-react';
+import { Skull, ShieldCheck, X, Trophy } from 'lucide-react';
 
 const BRAND_COLOR = '#4e24cf';
-const SLANGS = ["YOU GOT RUGGED", "EXIT LIQUIDITY", "DOWN BAD", "PAPER HANDS", "REKT", "COPE HARDER", "DEGEN DOWN"];
+const SLANGS = ["YOU GOT RUGGED", "EXIT LIQUIDITY", "DOWN BAD", "PAPER HANDS", "REKT", "COPE HARDER", "DEGEN DOWN", "TOTAL SHILL", "FADED BY DEVS", "PUMP AND DUMPED", "NGMI", "HFSP"];
 
 const DICTIONARY: Record<string, string> = {
   'WAGMI': 'We All Gonna Make It.', 'REKT': 'Total loss.', 'HODL': 'Hold On for Dear Life.',
-  'LFG': 'Lets F***ing Go!', 'RUG': 'Rug Pull.', 'MOON': 'Price pumping.',
+  'LFG': 'Lets Go!', 'RUG': 'Rug Pull.', 'MOON': 'Price pumping.',
   'APE IN': 'Buying without research.', 'FOMO': 'Fear Of Missing Out.', 'WHALE': 'Huge capital.',
   'DEGEN': 'High-risk trader.', 'DIAMOND HANDS': 'Refusing to sell.', 'SAFU': 'Funds are safe.',
   'JEET': 'Selling too fast.', 'SHITCOIN': 'Zero utility coin.', 'YOLO': 'You Only Live Once.',
-  'DEX': 'Decentralized Exchange.', 'LIQUIDITY': 'Pool funds.', 'MINT': 'Create NFT.',
+  'DEX': 'Exchange.', 'LIQUIDITY': 'Pool funds.', 'MINT': 'Create.',
   'ALPHA': 'Insider info.', 'BAGHOLDER': 'Holding losers.', 'BTFD': 'Buy The Dip.'
 };
 
@@ -71,14 +70,13 @@ export default function TrenchSniper() {
 
   const shareToX = () => {
     const text = `I just sniped ${score} points in the Trenches! Rank: #${globalRank || 'N/A'}. Come get rekt with me. 🎯🔫`;
-    const url = "https://trench-sniper.vercel.app";
-    window.open(`https://x.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, '_blank');
+    window.open(`https://x.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent("https://trench-sniper.vercel.app")}`, '_blank');
   };
 
   useEffect(() => {
     if (gameState === 'playing' && hasMounted) {
       gameLoopRef.current = setInterval(() => {
-        setTiles(prev => {
+        setTiles((prev) => {
           let baseSpeed = 4.2 + (score * 0.08);
           const updated = prev.map(t => ({ ...t, y: t.y + baseSpeed }));
           if (updated.some(t => t.y >= 98 && t.type === 'green')) { 
@@ -101,55 +99,69 @@ export default function TrenchSniper() {
   if (!hasMounted) return null;
 
   return (
-    <div style={{ backgroundColor: '#000', color: '#fff', height: '100vh', width: '100vw', fontFamily: 'monospace', display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'fixed' }}>
-      
-      {/* 1. HERO TITLE & INTEL (15% height) */}
+    <div style={{ backgroundColor: '#000', color: '#fff', height: '100vh', width: '100vw', fontFamily: 'monospace', display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'fixed', top: 0, left: 0 }}>
+      {/* HEADER */}
       <div style={{ height: '15vh', width: '100%', padding: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-          <h1 style={{ margin: 0, fontSize: '18px', fontWeight: '900', color: BRAND_COLOR, letterSpacing: '4px' }}>TRENCH SNIPER</h1>
-          <div style={{ width: '100%', flex: 1, backgroundColor: '#080808', border: '1px solid #1a1a1a', borderRadius: '8px', marginTop: '5px', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
-            {popup ? (
-              <div>
-                <div style={{ color: BRAND_COLOR, fontWeight: 'bold', fontSize: '12px' }}>{popup.term}</div>
-                <div style={{ color: '#666', fontSize: '9px' }}>{popup.def}</div>
-              </div>
-            ) : <div style={{ color: '#222', fontSize: '9px' }}>STAY ALERT</div>}
-          </div>
+        <h1 style={{ margin: 0, fontSize: '18px', fontWeight: '900', color: BRAND_COLOR, letterSpacing: '4px' }}>TRENCH SNIPER</h1>
+        <div style={{ width: '100%', flex: 1, backgroundColor: '#080808', border: '1px solid #1a1a1a', borderRadius: '8px', marginTop: '5px', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
+          {popup ? (
+            <div>
+              <div style={{ color: BRAND_COLOR, fontWeight: 'bold', fontSize: '12px' }}>{popup.term}</div>
+              <div style={{ color: '#666', fontSize: '9px' }}>{popup.def}</div>
+            </div>
+          ) : <div style={{ color: '#222', fontSize: '9px' }}>STAY ALERT</div>}
+        </div>
       </div>
 
-      {/* 2. MAIN WINDOW (65% height) */}
+      {/* GAME AREA */}
       <main style={{ height: '65vh', width: '100%', maxWidth: '420px', margin: '0 auto', position: 'relative' }}>
         {gameState === 'playing' ? (
           <div style={{ width: '100%', height: '100%', border: flash ? `2px solid ${BRAND_COLOR}` : '1px solid #151515', position: 'relative', overflow: 'hidden', background: '#030303', borderRadius: '16px' }}>
-            <div style={{ position: 'absolute', top: '10px', right: '15px', fontSize: '24px', fontWeight: 'bold', opacity: 0.1 }}>{score}</div>
-            {tiles.map(tile => (
-              <div key={tile.id} onPointerDown={() => {
-                if (tile.type === 'red') triggerGameOver();
-                else {
-                  setScore(s => s + 1); setFlash(true);
-                  setPopup({ term: tile.term, def: DICTIONARY[tile.term] });
-                  setTiles(prev => prev.filter(t => t.id !== tile.id));
-                  setTimeout(() => setFlash(false), 100);
-                }
-              }} style={{ position: 'absolute', top: `${tile.y}%`, left: `${tile.lane * 25}%`, width: '23%', padding: '15px 0', textAlign: 'center', border: `1px solid ${tile.type === 'green' ? '#22c55e' : '#ef4444'}`, color: tile.type === 'green' ? '#22c55e' : '#ef4444', fontSize: '9px', fontWeight: '900', backgroundColor: 'rgba(0,0,0,0.9)', borderRadius: '6px', cursor: 'pointer', touchAction: 'none' }}>{tile.term}</div>
-            ))}
+             <div style={{ position: 'absolute', top: '10px', right: '15px', fontSize: '24px', fontWeight: 'bold', opacity: 0.1 }}>{score}</div>
+             {tiles.map((tile) => (
+                <div key={tile.id} onPointerDown={() => tile.type === 'red' ? triggerGameOver() : (setScore(s => s + 1), setFlash(true), setPopup({ term: tile.term, def: DICTIONARY[tile.term] }), setTiles(prev => prev.filter(t => t.id !== tile.id)), setTimeout(() => setFlash(false), 100))} style={{ position: 'absolute', top: `${tile.y}%`, left: `${tile.lane * 25}%`, width: '23%', padding: '15px 0', textAlign: 'center', border: `1px solid ${tile.type === 'green' ? '#22c55e' : '#ef4444'}`, color: tile.type === 'green' ? '#22c55e' : '#ef4444', fontSize: '9px', fontWeight: '900', backgroundColor: 'rgba(0,0,0,0.9)', borderRadius: '6px', cursor: 'pointer', touchAction: 'none' }}>{tile.term}</div>
+             ))}
           </div>
         ) : (
           <div style={{ height: '100%', padding: '0 10px', display: 'flex', flexDirection: 'column' }}>
             {gameState === 'identity' ? (
               <div style={{ border: `1px solid ${BRAND_COLOR}`, padding: '25px', textAlign: 'center', background: '#050505', borderRadius: '20px' }}>
-                <ShieldCheck color={BRAND_COLOR} size={32} style={{margin: '0 auto 10px'}} />
+                <ShieldCheck color={BRAND_COLOR} size={32} style={{ margin: '0 auto 10px' }} />
                 <input style={{ width: '100%', padding: '15px', background: '#000', border: '1px solid #222', color: '#fff', marginBottom: '15px', textAlign: 'center', borderRadius: '10px' }} placeholder="@X_HANDLE" value={username} onChange={(e) => setUsername(e.target.value)} />
                 <button onClick={() => username && setGameState('playing')} style={{ width: '100%', padding: '15px', background: BRAND_COLOR, color: '#fff', fontWeight: 'bold', borderRadius: '10px' }}>ENTER TRENCHES</button>
               </div>
             ) : (
-              <div style={{ flex: 1, border: '1px solid #ef4444', padding: '15px', background: '#050505', borderRadius: '20px', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+              <div style={{ flex: 1, border: '1px solid #ef4444', padding: '15px', background: '#050505', borderRadius: '20px', display: 'flex', flexDirection: 'column' }}>
                 <div style={{ textAlign: 'center', marginBottom: '10px' }}>
-                  <Skull color="#ef4444" size={20} style={{margin: '0 auto'}} />
-                  <h2 style={{ color: '#ef4444', fontSize: '14px', fontWeight: 'bold', margin: '5px 0' }}>{currentSlang}</h2>
+                  <Skull color="#ef4444" size={20} style={{ margin: '0 auto' }} />
+                  <h2 style={{ color: '#ef4444', fontSize: '18px', fontWeight: 'bold' }}>{currentSlang}</h2>
+                  <div style={{ color: '#22c55e', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>
+                    <Trophy size={14} /> PB: {highScore}
+                  </div>
                 </div>
                 <div style={{ flex: 1, overflowY: 'auto', background: '#000', borderRadius: '8px', padding: '10px' }}>
-                  <table style={{ width: '100%', fontSize: '11px' }}>
-                    <tbody>
-                      {leaderboard.slice(0, 10).map((e, i) => (
+                   <table style={{ width: '100%', fontSize: '11px' }}>
+                      <tbody>{leaderboard.slice(0, 10).map((e, i) => (
                         <tr key={i} style={{ color: e.username?.toLowerCase() === username.toLowerCase() ? BRAND_COLOR : '#ccc' }}>
-                          <td style={{padding: '3px 0'}}>#{i+1
+                          <td style={{ padding: '3px 0' }}>#{i + 1} {e.username}</td>
+                          <td style={{ textAlign: 'right' }}>{e.score}</td>
+                        </tr>
+                      ))}</tbody>
+                   </table>
+                </div>
+                <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                  <button onClick={() => { setScore(0); setTiles([]); setGameState('playing'); }} style={{ flex: 2, padding: '12px', background: '#fff', color: '#000', fontWeight: 'bold', borderRadius: '8px' }}>RETRY</button>
+                  <button onClick={shareToX} style={{ flex: 1, padding: '12px', background: '#000', border: '1px solid #333', color: '#fff', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><X size={16} /></button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </main>
+      <footer style={{ height: '20vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ fontSize: '10px', color: '#444' }}>PB: {highScore} | RANK: #{globalRank || '--'}</div>
+        <div style={{ fontSize: '10px', color: BRAND_COLOR, marginTop: '8px', fontWeight: 'bold' }}>BUILT BY @MOJEEBHQ</div>
+      </footer>
+    </div>
+  );
+}
