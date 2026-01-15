@@ -1,13 +1,13 @@
-import { kv } from '@vercel/kv'; // Changed this line
+import { kv } from '@vercel/kv';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
   try {
-    // Fetch top 10 scores
+    // Correctly fetch the top 10 from Vercel KV
     const scores = await kv.zrange('trench_sniper_leaderboard', 0, 9, { rev: true, withScores: true });
     return NextResponse.json(scores);
   } catch (error) {
-    console.error("KV GET Error:", error);
+    console.error("KV Fetch Error:", error);
     return NextResponse.json([]);
   }
 }
@@ -20,7 +20,6 @@ export async function POST(req: Request) {
     }
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("KV POST Error:", error);
     return NextResponse.json({ success: false }, { status: 500 });
   }
 }

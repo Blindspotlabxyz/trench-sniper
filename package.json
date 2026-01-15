@@ -1,29 +1,23 @@
-{
-  "name": "trench-sniper",
-  "version": "1.0.0",
-  "private": true,
-  "scripts": {
-    "dev": "next dev",
-    "build": "next build --no-lint",
-    "start": "next start",
-    "lint": "next lint"
-  },
-  "dependencies": {
-    "@tailwindcss/postcss": "^4.0.0",
-    "@vercel/kv": "^2.0.0",
-    "framer-motion": "^12.0.0",
-    "lucide-react": "^0.454.0",
-    "next": "^15.0.0",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0"
-  },
-  "devDependencies": {
-    "@types/node": "^20.0.0",
-    "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0",
-    "autoprefixer": "^10.4.0",
-    "postcss": "^8.4.0",
-    "tailwindcss": "^4.0.0",
-    "typescript": "^5.0.0"
+import { kv } from '@vercel/kv';
+import { NextResponse } from 'next/server';
+
+export async function GET() {
+  try {
+    const scores = await kv.zrange('trench_sniper_leaderboard', 0, 9, { rev: true, withScores: true });
+    return NextResponse.json(scores || []);
+  } catch (error) {
+    return NextResponse.json([]);
+  }
+}
+
+export async function POST(req: Request) {
+  try {
+    const { username, score } = await req.json();
+    if (username && score !== undefined) {
+      await kv.zadd('trench_sniper_leaderboard', { score, member: username });
+    }
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    return NextResponse.json({ success: false }, { status: 500 });
   }
 }
