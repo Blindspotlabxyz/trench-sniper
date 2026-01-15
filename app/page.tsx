@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Share2, Skull, Trophy, Activity } from 'lucide-react';
+import { Share2, Skull, Trophy } from 'lucide-react';
 
 const BRAND_COLOR = '#4e24cf';
 
@@ -122,7 +122,8 @@ export default function TrenchSniper() {
 
   const shareToX = () => {
     const gameUrl = typeof window !== 'undefined' ? window.location.origin : '';
-    const shareText = `Score: ${score} on Trench Sniper 🎯\n\n"${rugQuote}"\n\nBest: ${highScore}`;
+    // FIXED: Now correctly includes your Sniper name in the post
+    const shareText = `Sniper: ${username}\nScore: ${score} on Trench Sniper 🎯\n\n"${rugQuote}"\n\nBest: ${highScore}`;
     const xUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(gameUrl)}`;
     window.open(xUrl, '_blank');
   };
@@ -199,7 +200,6 @@ export default function TrenchSniper() {
       touchAction: 'none', overflow: 'hidden' 
     }}>
       
-      {/* ONCHAIN INDICATOR AND HEADER */}
       <header style={{ textAlign: 'center', padding: '10px 0', position: 'relative' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '2px' }}>
             <div style={{ 
