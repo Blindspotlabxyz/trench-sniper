@@ -9,7 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@tailwindcss/postcss": "^4.1.18",
+    "@upstash/kv": "^1.0.1",
     "@vercel/kv": "^2.0.0",
     "framer-motion": "^12.26.2",
     "lucide-react": "^0.562.0",
