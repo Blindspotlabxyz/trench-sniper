@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Share2, Skull } from 'lucide-react';
+import { Share2, Skull, Trophy } from 'lucide-react';
 
 const BRAND_COLOR = '#4e24cf';
 
@@ -34,6 +34,11 @@ interface Tile {
   id: number; term: string; type: 'green' | 'red'; lane: number; y: number;
 }
 
+interface LeaderboardEntry {
+  username: string;
+  score: number;
+}
+
 export default function TrenchSniper() {
   const [hasMounted, setHasMounted] = useState(false);
   const [gameState, setGameState] = useState<'identity' | 'playing' | 'gameOver'>('identity');
@@ -44,30 +49,52 @@ export default function TrenchSniper() {
   const [flash, setFlash] = useState(false);
   const [rugQuote, setRugQuote] = useState("");
   const [popup, setPopup] = useState<{term: string, def: string} | null>(null);
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   
   const gameLoopRef = useRef<NodeJS.Timeout | null>(null);
   const tileIdCounter = useRef(0);
 
-  // Fix 1: Memoized GameOver function
-  const triggerGameOver = useCallback(() => {
-    setRugQuote(RUG_MESSAGES[Math.floor(Math.random() * RUG_MESSAGES.length)]);
-    setScore(currentScore => {
-      if (currentScore > highScore) {
-        setHighScore(currentScore);
-        localStorage.setItem('trench_highscore', currentScore.toString());
+  const fetchLeaderboard = async () => {
+    try {
+      const res = await fetch('/api/scores');
+      const data = await res.json();
+      // Format data: data comes back as [user1, score1, user2, score2...]
+      const formatted: LeaderboardEntry[] = [];
+      for (let i = 0; i < data.length; i += 2) {
+        formatted.push({ username: data[i], score: data[i+1] });
       }
-      return currentScore;
-    });
-    setGameState('gameOver');
-  }, [highScore]);
+      setLeaderboard(formatted);
+    } catch (e) {
+      console.error("Leaderboard error", e);
+    }
+  };
 
-  // Fix 2: Mounting effect that satisfies ESLint
+  const triggerGameOver = useCallback(async () => {
+    setRugQuote(RUG_MESSAGES[Math.floor(Math.random() * RUG_MESSAGES.length)]);
+    
+    // Save locally
+    if (score > highScore) {
+      setHighScore(score);
+      localStorage.setItem('trench_highscore', score.toString());
+    }
+
+    // Save to Global Database
+    if (score > 0) {
+      await fetch('/api/scores', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, score }),
+      });
+    }
+
+    setGameState('gameOver');
+    fetchLeaderboard(); // Refresh scores for the end screen
+  }, [highScore, score, username]);
+
   useEffect(() => {
     setHasMounted(true);
     const saved = typeof window !== 'undefined' ? localStorage.getItem('trench_highscore') : null;
-    if (saved) {
-        setHighScore(parseInt(saved));
-    }
+    if (saved) setHighScore(parseInt(saved));
   }, []);
 
   useEffect(() => {
@@ -219,12 +246,24 @@ export default function TrenchSniper() {
         )}
 
         {gameState === 'gameOver' && (
-          <div style={{ border: '2px solid #ef4444', padding: '30px', textAlign: 'center', background: '#0a0a0a', borderRadius: '24px' }}>
-            <Skull color="#ef4444" size={32} style={{marginBottom: '10px'}} />
-            <h2 style={{ color: '#ef4444', fontSize: '0.9rem', fontWeight: '900', marginBottom: '10px', lineHeight: '1.4' }}>
-               &quot;{rugQuote}&quot;
-            </h2>
-            <p style={{ fontSize: '1.4rem', marginBottom: '20px', fontWeight: 'bold' }}>SCORE: {score}</p>
+          <div style={{ border: '2px solid #ef4444', padding: '20px', textAlign: 'center', background: '#0a0a0a', borderRadius: '24px', maxHeight: '80vh', overflowY: 'auto' }}>
+            <Skull color="#ef4444" size={24} style={{margin: '0 auto 10px'}} />
+            <h2 style={{ color: '#ef4444', fontSize: '0.8rem', fontWeight: '900', marginBottom: '10px' }}>&quot;{rugQuote}&quot;</h2>
+            <p style={{ fontSize: '1.2rem', marginBottom: '15px', fontWeight: 'bold' }}>SCORE: {score}</p>
+            
+            {/* Leaderboard Section */}
+            <div style={{ background: '#000', borderRadius: '12px', padding: '15px', marginBottom: '15px', border: '1px solid #222' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', color: BRAND_COLOR, fontSize: '0.7rem', fontWeight: 'bold', marginBottom: '10px' }}>
+                <Trophy size={14} /> GLOBAL TOP 10
+              </div>
+              {leaderboard.length > 0 ? leaderboard.map((entry, i) => (
+                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', padding: '4px 0', borderBottom: '1px solid #111' }}>
+                  <span style={{ color: i === 0 ? '#fbbf24' : '#888' }}>{i + 1}. {entry.username}</span>
+                  <span style={{ fontWeight: 'bold' }}>{entry.score}</span>
+                </div>
+              )) : <div style={{ fontSize: '9px', color: '#444' }}>Loading the trench legends...</div>}
+            </div>
+
             <button 
               onClick={shareToX}
               style={{ width: '100%', padding: '12px', background: 'transparent', border: '1px solid #1DA1F2', color: '#1DA1F2', fontWeight: 'bold', marginBottom: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', borderRadius: '12px', fontSize: '0.8rem' }}
