@@ -61,7 +61,6 @@ export default function TrenchSniper() {
         }
       }
       
-      // CRITICAL: Merge duplicates on the frontend just in case API lags
       const uniqueMap = new Map();
       formatted.forEach(entry => {
         const name = entry.username.toLowerCase().trim();
@@ -116,18 +115,7 @@ export default function TrenchSniper() {
 
     const rankText = globalRank ? ` (Rank #${globalRank})` : "";
     
-    // Exact format requested
-    const shareText = `${title}
-Sniper: ${username}${rankText}
-Score: ${score} on Trench Sniper ONCHAIN
-
-"${rugQuote}"
-
-Mastering Web3 terms and dodging rugs.
-
-Play here: https://trench-sniper.vercel.app
-
-Built by @MojeebHQ`;
+    const shareText = `${title}\nSniper: ${username}${rankText}\nScore: ${score} on Trench Sniper ONCHAIN\n\n"${rugQuote}"\n\nMastering Web3 terms and dodging rugs.\n\nPlay here: https://trench-sniper.vercel.app\n\nBuilt by @MojeebHQ`;
 
     window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`, '_blank');
   };
@@ -213,9 +201,9 @@ Built by @MojeebHQ`;
                    </table>
                 </div>
                 <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
-                  <button onClick={() => { setScore(0); setTiles([]); setGameState('playing'); }} style={{ flex: 1, padding: '14px', background: '#fff', color: '#000', fontWeight: 'bold', borderRadius: '12px', border: 'none' }}>RETRY</button>
+                  <button onClick={() => { setScore(0); setTiles([]); setGameState('playing'); }} style={{ flex: 1, padding: '14px', background: '#fff', color: '#000', fontWeight: 'bold', borderRadius: '12px', border: 'none' }}>LOCKED IN AGAIN</button>
                   <button onClick={shareToX} style={{ flex: 1, padding: '14px', background: BRAND_COLOR, color: '#fff', fontWeight: 'bold', borderRadius: '12px', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                    <Share2 size={18} /> SHARE CLOUT
+                    <Share2 size={18} /> JEET TO X
                   </button>
                 </div>
               </div>
