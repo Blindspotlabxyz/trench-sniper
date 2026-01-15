@@ -1,9 +1,7 @@
 import { Redis } from '@upstash/redis';
 import { NextResponse } from 'next/server';
 
-/** * These variables are the 'locked' ones you see in your Vercel Settings.
- * Vercel's Upstash integration automatically provides these.
- */
+// This uses the "Locked" variables from your Vercel screenshot
 const redis = new Redis({
   url: process.env.KV_REST_API_URL,
   token: process.env.KV_REST_API_TOKEN,
@@ -17,7 +15,6 @@ export async function GET() {
     });
     return NextResponse.json(scores || []);
   } catch (error) {
-    console.error("Redis Error:", error);
     return NextResponse.json([]);
   }
 }
