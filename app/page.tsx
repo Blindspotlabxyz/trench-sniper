@@ -57,14 +57,11 @@ export default function TrenchSniper() {
 
   const fetchLeaderboard = useCallback(async () => {
     try {
-      // Points to your fixed API route
       const res = await fetch('/api/leaderboard');
       const data = await res.json();
       
       let formatted: LeaderboardEntry[] = [];
-      
       if (Array.isArray(data)) {
-        // Handle Upstash/Redis response format (pairs or objects)
         if (typeof data[0] === 'object' && data[0] !== null) {
           formatted = data;
         } else {
@@ -77,22 +74,28 @@ export default function TrenchSniper() {
       formatted.sort((a, b) => b.score - a.score);
       setLeaderboard(formatted);
 
-      const savedHS = typeof window !== 'undefined' ? Number(localStorage.getItem('trench_highscore') || 0) : 0;
-      if (savedHS > 0 && formatted.length > 0) {
-        const index = formatted.findIndex(e => savedHS >= e.score);
-        setGlobalRank(index !== -1 ? index + 1 : formatted.length + 1);
+      // --- GLOBAL RANK LOGIC FIX ---
+      const currentHigh = Number(localStorage.getItem('trench_highscore') || 0);
+      if (currentHigh > 0) {
+        // Find by name first
+        const myIndex = formatted.findIndex(e => e.username.toLowerCase() === username.toLowerCase());
+        if (myIndex !== -1) {
+          setGlobalRank(myIndex + 1);
+        } else {
+          // Find where this score would sit in the list
+          const rankPos = formatted.findIndex(e => currentHigh > e.score);
+          setGlobalRank(rankPos !== -1 ? rankPos + 1 : formatted.length + 1);
+        }
       }
     } catch (e) {
       console.error("Leaderboard error", e);
     }
-  }, []);
+  }, [username]);
 
   const triggerGameOver = useCallback(async () => {
     setRugQuote(RUG_MESSAGES[Math.floor(Math.random() * RUG_MESSAGES.length)]);
     
-    let currentBest = highScore;
     if (score > highScore) {
-      currentBest = score;
       setHighScore(score);
       localStorage.setItem('trench_highscore', score.toString());
     }
