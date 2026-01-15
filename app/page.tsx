@@ -25,7 +25,25 @@ const DICTIONARY: Record<string, string> = {
   'MINTING': 'Generating.', 'PFP': 'Profile Pic.', 'MOONBOY': 'Bullish anon.'
 };
 
-const RUG_MESSAGES = ["YOU BOUGHT THE TOP.", "EXIT LIQUIDITY DETECTED.", "DEV IS DED. KEK.", "KEK YOU'RE DED.", "THANKS FOR THE SOL, JEET."];
+// --- FULL SAVAGE RUG MESSAGES ---
+const RUG_MESSAGES = [
+  "YOU BOUGHT THE TOP.", 
+  "YOU'RE SO DOOMED, PACK EVERYTHING.", 
+  "DON'T SLEEP, WORK HARD.",
+  "YOU RAN OUT OF REACH.", 
+  "ONLY LEGEND HERE, PLS.", 
+  "NOT FOR YAPPERS.",
+  "TO KNOW IS TO BE FREE.", 
+  "WHERE IS YOUR AURA?", 
+  "NO AURA, YOU CAN DO BETTER.",
+  "YOU'RE JUST AN EXIT LIQUIDITY.", 
+  "DEV IS DED. KEK.", 
+  "KEK YOU'RE DED.",
+  "THANK YOU FOR YOUR ATTENTION.", 
+  "EXIT LIQUIDITY DETECTED.", 
+  "THANKS FOR THE SOL, JEET."
+];
+
 const TOP_CLOUT = ["TRENCH GOD 👑", "AURA MAXIMIZED ⚡", "LIQUIDITY KING 💎"];
 const MID_CLOUT = ["WHALE IN TRAINING 🐋", "ALPHA FINDER"];
 const LOW_CLOUT = ["TRENCH GRINDER ⚔️", "EXIT LIQUIDITY 💀"];
@@ -93,7 +111,7 @@ export default function TrenchSniper() {
     if (gameState === 'playing' && hasMounted) {
       gameLoopRef.current = setInterval(() => {
         setTiles(prev => {
-          let baseSpeed = 4.0 + (score * 0.08);
+          let baseSpeed = 4.0 + (score * 0.09); // Slightly faster scaling for intensity
           const updated = prev.map(t => ({ ...t, y: t.y + baseSpeed }));
           if (updated.some(t => t.y >= 96 && t.type === 'green')) { triggerGameOver(); return []; }
           if (Math.random() < 0.08) {
@@ -123,7 +141,7 @@ export default function TrenchSniper() {
   return (
     <div style={{ backgroundColor: '#000', color: '#fff', height: '100dvh', fontFamily: 'monospace', display: 'flex', flexDirection: 'column', alignItems: 'center', overflow: 'hidden' }}>
       
-      {/* 1. TOP STATS BAR - High Visibility */}
+      {/* 1. TOP STATS BAR */}
       <div style={{ height: '6vh', width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 20px', background: '#050505', borderBottom: '1px solid #111' }}>
          <div style={{ display: 'flex', gap: '15px', fontSize: '11px', fontWeight: 'bold' }}>
             <span style={{color: '#888'}}>PB: <span style={{color: '#fff'}}>{highScore}</span></span>
@@ -175,19 +193,19 @@ export default function TrenchSniper() {
              ) : (
                <div style={{ width: '100%', border: '1px solid #ef4444', padding: '25px', textAlign: 'center', background: '#050505', borderRadius: '20px' }}>
                   <Skull color="#ef4444" style={{margin: '0 auto 10px'}} />
-                  <p style={{ color: '#ef4444', fontSize: '11px', marginBottom: '10px' }}>"{rugQuote}"</p>
+                  <p style={{ color: '#ef4444', fontSize: '11px', marginBottom: '10px', fontWeight: 'bold' }}>"{rugQuote}"</p>
                   <p style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '15px' }}>SCORE: {score}</p>
                   <button onClick={shareToX} style={{ width: '100%', padding: '12px', background: 'transparent', border: '1px solid #1DA1F2', color: '#1DA1F2', fontWeight: 'bold', marginBottom: '10px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                     <Share2 size={16} /> SHARE CLOUT
                   </button>
-                  <button onClick={() => { setScore(0); setTiles([]); setGameState('playing'); }} style={{ width: '100%', padding: '15px', background: '#fff', color: '#000', fontWeight: 'bold', borderRadius: '10px' }}>RETRY</button>
+                  <button onClick={() => { setScore(0); setTiles([]); setGameState('playing'); }} style={{ width: '100%', padding: '15px', background: '#fff', color: '#000', fontWeight: 'bold', borderRadius: '10px' }}>LOCKED IN</button>
                </div>
              )}
           </div>
         )}
       </main>
 
-      {/* 4. FOOTER - Interactive Links */}
+      {/* 4. FOOTER */}
       <footer style={{ height: '20vh', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
         <a href="https://blindspotlabs.vercel.app" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
            <div style={{ fontSize: '9px', color: '#444', fontWeight: 'bold', letterSpacing: '1px', borderBottom: '1px solid #1a1a1a' }}>POWERED BY BLINDSPOT LABS</div>
