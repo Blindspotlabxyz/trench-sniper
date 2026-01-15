@@ -59,34 +59,58 @@ export default function TrenchSniper() {
     try {
       const res = await fetch('/api/scores');
       const data = await res.json();
-      const formatted: LeaderboardEntry[] = [];
-      for (let i = 0; i < data.length; i += 2) {
-        formatted.push({ username: data[i], score: data[i+1] });
+      
+      let formatted: LeaderboardEntry[] = [];
+      
+      // FIX: Robust data parsing for different API response types
+      if (Array.isArray(data)) {
+        if (typeof data[0] === 'object' && data[0] !== null) {
+          formatted = data; // Already objects
+        } else {
+          for (let i = 0; i < data.length; i += 2) {
+            formatted.push({ username: data[i], score: Number(data[i+1]) });
+          }
+        }
       }
+
+      // Sort by score descending
+      formatted.sort((a, b) => b.score - a.score);
       setLeaderboard(formatted);
 
-      if (highScore > 0) {
-        const rank = formatted.findIndex(e => e.score <= highScore);
-        setGlobalRank(rank !== -1 ? rank + 1 : formatted.length + 1);
+      // FIX: Global Rank Logic
+      const savedHS = typeof window !== 'undefined' ? Number(localStorage.getItem('trench_highscore') || 0) : 0;
+      if (savedHS > 0 && formatted.length > 0) {
+        // Find index of first person with a score less than or equal to yours
+        const index = formatted.findIndex(e => savedHS >= e.score);
+        setGlobalRank(index !== -1 ? index + 1 : formatted.length + 1);
       }
     } catch (e) {
       console.error("Leaderboard error", e);
     }
-  }, [highScore]);
+  }, []);
 
   const triggerGameOver = useCallback(async () => {
     setRugQuote(RUG_MESSAGES[Math.floor(Math.random() * RUG_MESSAGES.length)]);
+    
+    let currentBest = highScore;
     if (score > highScore) {
+      currentBest = score;
       setHighScore(score);
       localStorage.setItem('trench_highscore', score.toString());
     }
+
     if (score > 0) {
-      await fetch('/api/scores', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, score }),
-      });
+      try {
+        await fetch('/api/scores', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, score }),
+        });
+      } catch (e) {
+        console.error("Score save failed", e);
+      }
     }
+
     setGameState('gameOver');
     fetchLeaderboard();
   }, [highScore, score, username, fetchLeaderboard]);
@@ -162,7 +186,6 @@ export default function TrenchSniper() {
     } else {
       setScore(s => s + 1);
       setFlash(true);
-      // RESTORED POPUP LOGIC HERE
       setPopup({ term: tile.term, def: DICTIONARY[tile.term] || 'Safe!' });
       setTiles(prev => prev.filter(t => t.id !== tile.id));
     }
@@ -244,7 +267,6 @@ export default function TrenchSniper() {
                 </div>
               ))}
 
-              {/* RESTORED POPUP UI HERE */}
               {popup && (
                 <div style={{ 
                   position: 'absolute', bottom: '15px', left: '15px', right: '15px',
