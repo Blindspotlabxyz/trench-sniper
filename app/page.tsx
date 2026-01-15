@@ -23,10 +23,10 @@ const DICTIONARY: Record<string, string> = {
 };
 
 const RUG_MESSAGES = [
-  "YOU BOUGHT THE TOP.", "YOU&apos;RE SO DOOMED, PACK EVERYTHING.", "DON&apos;T SLEEP, WORK HARD.",
+  "YOU BOUGHT THE TOP.", "YOU'RE SO DOOMED, PACK EVERYTHING.", "DON'T SLEEP, WORK HARD.",
   "YOU RAN OUT OF REACH.", "ONLY LEGEND HERE, PLS.", "NOT FOR YAPPERS.",
   "TO KNOW IS TO BE FREE.", "WHERE IS YOUR AURA?", "NO AURA, YOU CAN DO BETTER.",
-  "YOU&apos;RE JUST AN EXIT LIQUIDITY.", "DEV IS DED. KEK.", "KEK YOU&apos;RE DED.",
+  "YOU'RE JUST AN EXIT LIQUIDITY.", "DEV IS DED. KEK.", "KEK YOU'RE DED.",
   "THANK YOU FOR YOUR ATTENTION.", "EXIT LIQUIDITY DETECTED.", "THANKS FOR THE SOL, JEET."
 ];
 
@@ -48,7 +48,7 @@ export default function TrenchSniper() {
   const gameLoopRef = useRef<NodeJS.Timeout | null>(null);
   const tileIdCounter = useRef(0);
 
-  // Memoized GameOver function to satisfy ESLint
+  // Fix 1: Memoized GameOver function
   const triggerGameOver = useCallback(() => {
     setRugQuote(RUG_MESSAGES[Math.floor(Math.random() * RUG_MESSAGES.length)]);
     setScore(currentScore => {
@@ -61,10 +61,13 @@ export default function TrenchSniper() {
     setGameState('gameOver');
   }, [highScore]);
 
+  // Fix 2: Mounting effect that satisfies ESLint
   useEffect(() => {
     setHasMounted(true);
-    const saved = localStorage.getItem('trench_highscore');
-    if (saved) setHighScore(parseInt(saved));
+    const saved = typeof window !== 'undefined' ? localStorage.getItem('trench_highscore') : null;
+    if (saved) {
+        setHighScore(parseInt(saved));
+    }
   }, []);
 
   useEffect(() => {
@@ -131,7 +134,7 @@ export default function TrenchSniper() {
   };
 
   const shareToX = () => {
-    const text = `Score: ${score} on Trench Sniper 🎯 %0A%0A"${rugQuote}" %0A%0ABuilt by @MojeebHQ %0A%0ABest: ${highScore} | ${window.location.href}`;
+    const text = `Score: ${score} on Trench Sniper 🎯 %0A%0A"${rugQuote}" %0A%0ABuilt by @MojeebHQ %0A%0ABest: ${highScore} | ${typeof window !== 'undefined' ? window.location.href : ''}`;
     window.open(`https://twitter.com/intent/tweet?text=${text}`, '_blank');
   };
 
@@ -219,7 +222,7 @@ export default function TrenchSniper() {
           <div style={{ border: '2px solid #ef4444', padding: '30px', textAlign: 'center', background: '#0a0a0a', borderRadius: '24px' }}>
             <Skull color="#ef4444" size={32} style={{marginBottom: '10px'}} />
             <h2 style={{ color: '#ef4444', fontSize: '0.9rem', fontWeight: '900', marginBottom: '10px', lineHeight: '1.4' }}>
-               &quot;{rugQuote.replace(/&apos;/g, "'")}&quot;
+               &quot;{rugQuote}&quot;
             </h2>
             <p style={{ fontSize: '1.4rem', marginBottom: '20px', fontWeight: 'bold' }}>SCORE: {score}</p>
             <button 
