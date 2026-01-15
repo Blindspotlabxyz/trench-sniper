@@ -7,19 +7,13 @@ const BRAND_COLOR = '#4e24cf';
 
 const DICTIONARY: Record<string, string> = {
   'WAGMI': 'We All Gonna Make It.', 'REKT': 'Total loss.', 'HODL': 'Hold On for Dear Life.',
-  'LFG': 'Lets F***ing Go!', 'RUG': 'Rug Pull.', 'MOON': 'Price pumping.',
-  'APE IN': 'Buying without research.', 'FOMO': 'Fear Of Missing Out.', 'WHALE': 'Huge capital.',
+  'LFG': 'Lets Go!', 'RUG': 'Rug Pull.', 'MOON': 'Price pumping.',
+  'APE IN': 'Degenerate buying.', 'FOMO': 'Fear Of Missing Out.', 'WHALE': 'Huge capital.',
   'DEGEN': 'High-risk trader.', 'DIAMOND HANDS': 'Refusing to sell.', 'SAFU': 'Funds are safe.',
   'JEET': 'Selling too fast.', 'SHITCOIN': 'Zero utility coin.', 'YOLO': 'You Only Live Once.',
-  'DEX': 'Decentralized Exchange.', 'LIQUIDITY': 'Pool funds.', 'MINT': 'Create NFT.',
+  'DEX': 'Exchange.', 'LIQUIDITY': 'Pool funds.', 'MINT': 'Create NFT.',
   'ALPHA': 'Insider info.', 'BAGHOLDER': 'Holding losers.', 'BTFD': 'Buy The Dip.',
-  'DYOR': 'Do Your Own Research.', 'FUD': 'Fear Uncertainty Doubt.', 'GAS': 'Fees.',
-  'LAMBO': 'When lambo?', 'NGMI': 'Not Gonna Make It.', 'NORMIE': 'Non-crypto person.',
-  'PUMP': 'Price up.', 'DUMP': 'Price down.', 'SATS': 'Smallest BTC unit.',
-  'STABLE': 'USD pegged.', 'VAPORWARE': 'No product.', 'WEN': 'Asking for dates.',
-  'ZAP': 'Instaswap.', 'DAO': 'Community org.', 'DEFI': 'Finance apps.',
-  'ORACLE': 'Data feed.', 'TVL': 'Total Value Locked.', 'WEB3': 'New internet.',
-  'MINTING': 'Generating.', 'PFP': 'Profile Pic.', 'MOONBOY': 'Bullish anon.'
+  'GAS': 'Fees.', 'NGMI': 'Not Gonna Make It.', 'PFP': 'Profile Pic.'
 };
 
 const RUG_MESSAGES = [
@@ -30,7 +24,6 @@ const RUG_MESSAGES = [
   "THANK YOU FOR YOUR ATTENTION.", "EXIT LIQUIDITY DETECTED.", "THANKS FOR THE SOL, JEET."
 ];
 
-// VIRAL CLOUT TIERS
 const TOP_CLOUT = ["TRENCH GOD 👑", "AURA MAXIMIZED ⚡", "VITALIK'S CHOSEN ONE", "LIQUIDITY KING 💎", "SMART MONEY 🧠"];
 const MID_CLOUT = ["WHALE IN TRAINING 🐋", "ALPHA FINDER", "GIGA CHAD ENERGY", "DIAMOND HANDED"];
 const LOW_CLOUT = ["TRENCH GRINDER ⚔️", "EXIT LIQUIDITY 💀", "JEET DETECTED", "NORMIE TIER"];
@@ -50,34 +43,41 @@ export default function TrenchSniper() {
   const [popup, setPopup] = useState<{term: string, def: string} | null>(null);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [globalRank, setGlobalRank] = useState<number | null>(null);
-  const [isSyncing, setIsSyncing] = useState(false);
 
   const gameLoopRef = useRef<NodeJS.Timeout | null>(null);
   const tileIdCounter = useRef(0);
 
   const fetchLeaderboard = useCallback(async () => {
-    setIsSyncing(true);
     try {
       const res = await fetch('/api/leaderboard');
       const data = await res.json();
       let formatted: LeaderboardEntry[] = [];
       if (Array.isArray(data)) {
-        if (typeof data[0] === 'object' && data[0] !== null) { formatted = data; } 
+        if (typeof data[0] === 'object') { formatted = data; } 
         else {
           for (let i = 0; i < data.length; i += 2) {
             formatted.push({ username: data[i], score: Number(data[i+1]) });
           }
         }
       }
-      const sorted = formatted.sort((a, b) => b.score - a.score);
+      
+      // CRITICAL: Merge duplicates on the frontend just in case API lags
+      const uniqueMap = new Map();
+      formatted.forEach(entry => {
+        const name = entry.username.toLowerCase().trim();
+        if (!uniqueMap.has(name) || entry.score > uniqueMap.get(name).score) {
+          uniqueMap.set(name, entry);
+        }
+      });
+
+      const sorted = Array.from(uniqueMap.values()).sort((a, b) => b.score - a.score);
       setLeaderboard(sorted);
       
       if (username) {
-        const myIndex = sorted.findIndex(e => e.username.toLowerCase() === username.trim().toLowerCase());
-        setGlobalRank(myIndex !== -1 ? myIndex + 1 : null);
+        const myIdx = sorted.findIndex(e => e.username.toLowerCase() === username.toLowerCase().trim());
+        setGlobalRank(myIdx !== -1 ? myIdx + 1 : null);
       }
     } catch (e) { console.error(e); }
-    finally { setIsSyncing(false); }
   }, [username]);
 
   useEffect(() => {
@@ -88,12 +88,16 @@ export default function TrenchSniper() {
   }, [fetchLeaderboard]);
 
   const triggerGameOver = useCallback(async () => {
-    setRugQuote(RUG_MESSAGES[Math.floor(Math.random() * RUG_MESSAGES.length)]);
+    const quote = RUG_MESSAGES[Math.floor(Math.random() * RUG_MESSAGES.length)];
+    setRugQuote(quote);
+    
     if (score > highScore) {
       setHighScore(score);
       localStorage.setItem('trench_highscore', score.toString());
     }
+    
     setGameState('gameOver');
+
     if (score > 0 && username) {
       await fetch('/api/leaderboard', {
         method: 'POST',
@@ -105,25 +109,25 @@ export default function TrenchSniper() {
   }, [score, highScore, username, fetchLeaderboard]);
 
   const shareToX = () => {
-    let rankTitle = "";
-    if (globalRank && globalRank <= 10) rankTitle = TOP_CLOUT[Math.floor(Math.random() * TOP_CLOUT.length)];
-    else if (globalRank && globalRank <= 100) rankTitle = MID_CLOUT[Math.floor(Math.random() * MID_CLOUT.length)];
-    else rankTitle = LOW_CLOUT[Math.floor(Math.random() * LOW_CLOUT.length)];
+    let title = "";
+    if (globalRank && globalRank <= 10) title = TOP_CLOUT[Math.floor(Math.random() * TOP_CLOUT.length)];
+    else if (globalRank && globalRank <= 100) title = MID_CLOUT[Math.floor(Math.random() * MID_CLOUT.length)];
+    else title = LOW_CLOUT[Math.floor(Math.random() * LOW_CLOUT.length)];
 
-    const rankText = globalRank ? ` (Global Rank: #${globalRank})` : "";
+    const rankText = globalRank ? ` (Rank #${globalRank})` : "";
     
-    const shareText = `${rankTitle}
+    // Exact format requested
+    const shareText = `${title}
 Sniper: ${username}${rankText}
 Score: ${score} on Trench Sniper ONCHAIN
 
-"TO KNOW IS TO BE FREE."
+"${rugQuote}"
 
 Mastering Web3 terms and dodging rugs.
 
 Play here: https://trench-sniper.vercel.app
 
-Built by @MojeebHQ
-Powered by @Blindspotlabs`;
+Built by @MojeebHQ`;
 
     window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`, '_blank');
   };
@@ -132,12 +136,12 @@ Powered by @Blindspotlabs`;
     if (gameState === 'playing' && hasMounted) {
       gameLoopRef.current = setInterval(() => {
         setTiles(prev => {
-          let baseSpeed = 3.5 + (score * 0.05);
+          let baseSpeed = 3.5 + (score * 0.06);
           const updated = prev.map(t => ({ ...t, y: t.y + baseSpeed }));
           if (updated.some(t => t.y >= 94 && t.type === 'green')) { triggerGameOver(); return []; }
-          if (Math.random() < 0.09) {
+          if (Math.random() < 0.1) {
             const allTerms = Object.keys(DICTIONARY);
-            const isGreen = Math.random() > 0.4;
+            const isGreen = Math.random() > 0.42;
             updated.push({
               id: tileIdCounter.current++,
               term: isGreen ? allTerms[Math.floor(Math.random() * allTerms.length)] : 'RUG',
@@ -160,21 +164,21 @@ Powered by @Blindspotlabs`;
       {/* HEADER */}
       <div style={{ height: '15vh', width: '100%', padding: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
-          <div style={{ width: '6px', height: '6px', backgroundColor: isSyncing ? '#eab308' : '#ef4444', borderRadius: '50%', animation: 'blink 1.5s infinite' }} />
+          <div style={{ width: '6px', height: '6px', backgroundColor: '#ef4444', borderRadius: '50%', animation: 'blink 1.5s infinite' }} />
           <span style={{ fontSize: '9px', color: '#ef4444', fontWeight: 'bold' }}>ONCHAIN</span>
         </div>
         <h1 style={{ margin: 0, fontSize: '22px', fontWeight: '900', color: BRAND_COLOR, letterSpacing: '2px', fontStyle: 'italic' }}>TRENCH SNIPER</h1>
-        <div style={{ width: '100%', flex: 1, backgroundColor: '#080808', border: '1px solid #1a1a1a', borderRadius: '12px', marginTop: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '0 10px' }}>
+        <div style={{ width: '100%', flex: 1, backgroundColor: '#080808', border: '1px solid #1a1a1a', borderRadius: '12px', marginTop: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
           {popup ? (
             <div>
               <div style={{ color: BRAND_COLOR, fontWeight: 'bold', fontSize: '11px' }}>{popup.term}</div>
               <div style={{ color: '#666', fontSize: '9px' }}>{popup.def}</div>
             </div>
-          ) : <div style={{ color: '#222', fontSize: '10px' }}>SYNCING INTEL...</div>}
+          ) : <div style={{ color: '#222', fontSize: '10px' }}>WAITING FOR INTEL...</div>}
         </div>
       </div>
 
-      {/* MAIN GAME WINDOW */}
+      {/* GAME WINDOW */}
       <main style={{ height: '60vh', width: '100%', maxWidth: '420px', margin: '0 auto', position: 'relative' }}>
         {gameState === 'playing' ? (
           <div style={{ width: '100%', height: '100%', border: flash ? `2px solid ${BRAND_COLOR}` : '2px solid #151515', position: 'relative', overflow: 'hidden', background: '#030303', borderRadius: '24px' }}>
@@ -188,21 +192,20 @@ Powered by @Blindspotlabs`;
             {gameState === 'identity' ? (
               <div style={{ border: `2px solid ${BRAND_COLOR}`, padding: '30px 20px', textAlign: 'center', background: '#050505', borderRadius: '24px' }}>
                 <ShieldCheck color={BRAND_COLOR} size={40} style={{ margin: '0 auto 15px' }} />
-                <p style={{fontSize: '10px', color: BRAND_COLOR, marginBottom: '10px' }}>@X_HANDLE REQUIRED TO ENTER</p>
                 <input style={{ width: '100%', padding: '15px', background: '#000', border: '1px solid #222', color: BRAND_COLOR, marginBottom: '15px', textAlign: 'center', borderRadius: '12px', fontSize: '18px', fontWeight: 'bold', outline: 'none' }} placeholder="@" value={username} onChange={(e) => setUsername(e.target.value)} />
                 <button onClick={() => username && setGameState('playing')} style={{ width: '100%', padding: '16px', background: BRAND_COLOR, color: '#fff', fontWeight: 'bold', borderRadius: '12px', border: 'none' }}>ENTER TRENCHES</button>
               </div>
             ) : (
               <div style={{ flex: 1, border: '2px solid #ef4444', padding: '15px', background: '#050505', borderRadius: '24px', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
                 <div style={{ textAlign: 'center', marginBottom: '10px' }}>
-                  <Skull color="#ef4444" size={24} style={{ margin: '0 auto 10px' }} />
-                  <h2 style={{ color: '#ef4444', fontSize: '0.9rem', fontWeight: 'bold', fontStyle: 'italic' }}>&quot;{rugQuote}&quot;</h2>
-                  <div style={{ color: '#22c55e', fontSize: '16px', fontWeight: 'bold', marginTop: '5px' }}>SCORE: {score}</div>
+                  <Skull color="#ef4444" size={24} style={{ margin: '0 auto 5px' }} />
+                  <h2 style={{ color: '#ef4444', fontSize: '0.85rem', fontWeight: 'bold', fontStyle: 'italic', margin: '5px 0' }}>&quot;{rugQuote}&quot;</h2>
+                  <div style={{ color: '#22c55e', fontSize: '16px', fontWeight: 'bold' }}>SCORE: {score}</div>
                 </div>
                 <div style={{ flex: 1, overflowY: 'auto', background: '#000', borderRadius: '12px', padding: '10px', border: '1px solid #111' }}>
                    <table style={{ width: '100%', fontSize: '11px' }}>
                       <tbody>{leaderboard.slice(0, 50).map((e, i) => (
-                        <tr key={i} style={{ color: e.username?.toLowerCase() === username.toLowerCase() ? BRAND_COLOR : '#ccc', backgroundColor: e.username?.toLowerCase() === username.toLowerCase() ? '#4e24cf11' : 'transparent' }}>
+                        <tr key={i} style={{ color: e.username?.toLowerCase() === username.toLowerCase() ? BRAND_COLOR : '#ccc' }}>
                           <td style={{ padding: '4px' }}>#{i + 1} {e.username}</td>
                           <td style={{ textAlign: 'right', fontWeight: 'bold' }}>{e.score}</td>
                         </tr>
@@ -226,7 +229,7 @@ Powered by @Blindspotlabs`;
         <div style={{ fontSize: '11px', color: '#444', fontWeight: 'bold' }}>PB: {highScore} | GLOBAL RANK: #{globalRank || '--'}</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center' }}>
             <a href="https://x.com/MojeebHQ" target="_blank" style={{ textDecoration: 'none' }}>
-                <span style={{ fontSize: '10px', color: BRAND_COLOR, fontWeight: '900', borderBottom: `1px solid ${BRAND_COLOR}`, paddingBottom: '2px' }}>BUILT BY @MOJEEBHQ</span>
+                <span style={{ fontSize: '10px', color: BRAND_COLOR, fontWeight: '900', borderBottom: `1px solid ${BRAND_COLOR}` }}>BUILT BY @MOJEEBHQ</span>
             </a>
             <a href="https://blindspotlabs.vercel.app" target="_blank" style={{ textDecoration: 'none' }}>
                 <span style={{ fontSize: '9px', color: '#333', fontWeight: 'bold' }}>POWERED BY @BLINDSPOTLABS</span>
