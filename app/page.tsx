@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Share2, Skull } from 'lucide-react';
 
 const BRAND_COLOR = '#4e24cf';
@@ -23,10 +23,10 @@ const DICTIONARY: Record<string, string> = {
 };
 
 const RUG_MESSAGES = [
-  "YOU BOUGHT THE TOP.", "YOU'RE SO DOOMED, PACK EVERYTHING.", "DON'T SLEEP, WORK HARD.",
+  "YOU BOUGHT THE TOP.", "YOU&apos;RE SO DOOMED, PACK EVERYTHING.", "DON&apos;T SLEEP, WORK HARD.",
   "YOU RAN OUT OF REACH.", "ONLY LEGEND HERE, PLS.", "NOT FOR YAPPERS.",
   "TO KNOW IS TO BE FREE.", "WHERE IS YOUR AURA?", "NO AURA, YOU CAN DO BETTER.",
-  "YOU'RE JUST AN EXIT LIQUIDITY.", "DEV IS DED. KEK.", "KEK YOU'RE DED.",
+  "YOU&apos;RE JUST AN EXIT LIQUIDITY.", "DEV IS DED. KEK.", "KEK YOU&apos;RE DED.",
   "THANK YOU FOR YOUR ATTENTION.", "EXIT LIQUIDITY DETECTED.", "THANKS FOR THE SOL, JEET."
 ];
 
@@ -47,6 +47,19 @@ export default function TrenchSniper() {
   
   const gameLoopRef = useRef<NodeJS.Timeout | null>(null);
   const tileIdCounter = useRef(0);
+
+  // Memoized GameOver function to satisfy ESLint
+  const triggerGameOver = useCallback(() => {
+    setRugQuote(RUG_MESSAGES[Math.floor(Math.random() * RUG_MESSAGES.length)]);
+    setScore(currentScore => {
+      if (currentScore > highScore) {
+        setHighScore(currentScore);
+        localStorage.setItem('trench_highscore', currentScore.toString());
+      }
+      return currentScore;
+    });
+    setGameState('gameOver');
+  }, [highScore]);
 
   useEffect(() => {
     setHasMounted(true);
@@ -104,16 +117,7 @@ export default function TrenchSniper() {
       }, 50);
       return () => { if (gameLoopRef.current) clearInterval(gameLoopRef.current); };
     }
-  }, [gameState, hasMounted, score]);
-
-  const triggerGameOver = () => {
-    setRugQuote(RUG_MESSAGES[Math.floor(Math.random() * RUG_MESSAGES.length)]);
-    if (score > highScore) {
-      setHighScore(score);
-      localStorage.setItem('trench_highscore', score.toString());
-    }
-    setGameState('gameOver');
-  };
+  }, [gameState, hasMounted, score, triggerGameOver]);
 
   const handleSnipe = (tile: Tile) => {
     if (tile.type === 'red') {
@@ -214,7 +218,9 @@ export default function TrenchSniper() {
         {gameState === 'gameOver' && (
           <div style={{ border: '2px solid #ef4444', padding: '30px', textAlign: 'center', background: '#0a0a0a', borderRadius: '24px' }}>
             <Skull color="#ef4444" size={32} style={{marginBottom: '10px'}} />
-            <h2 style={{ color: '#ef4444', fontSize: '0.9rem', fontWeight: '900', marginBottom: '10px', lineHeight: '1.4' }}>"{rugQuote}"</h2>
+            <h2 style={{ color: '#ef4444', fontSize: '0.9rem', fontWeight: '900', marginBottom: '10px', lineHeight: '1.4' }}>
+               &quot;{rugQuote.replace(/&apos;/g, "'")}&quot;
+            </h2>
             <p style={{ fontSize: '1.4rem', marginBottom: '20px', fontWeight: 'bold' }}>SCORE: {score}</p>
             <button 
               onClick={shareToX}
