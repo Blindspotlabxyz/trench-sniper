@@ -30,6 +30,10 @@ const RUG_MESSAGES = [
   "THANK YOU FOR YOUR ATTENTION.", "EXIT LIQUIDITY DETECTED.", "THANKS FOR THE SOL, JEET."
 ];
 
+const TOP_CLOUT = ["TRENCH GOD 👑", "AURA MAXIMIZED ⚡", "VITALIK'S CHOSEN ONE", "LIQUIDITY KING 💎", "SMART MONEY 🧠"];
+const MID_CLOUT = ["WHALE IN TRAINING 🐋", "ALPHA FINDER", "GIGA CHAD ENERGY", "DIAMOND HANDED"];
+const LOW_CLOUT = ["TRENCH GRINDER ⚔️", "EXIT LIQUIDITY 💀", "JEET DETECTED", "NORMIE TIER"];
+
 interface Tile {
   id: number; term: string; type: 'green' | 'red'; lane: number; y: number;
 }
@@ -54,6 +58,10 @@ export default function TrenchSniper() {
   
   const gameLoopRef = useRef<NodeJS.Timeout | null>(null);
   const tileIdCounter = useRef(0);
+
+  useEffect(() => {
+    document.title = "TRENCH SNIPER | Master Web3 Terms While You Play";
+  }, []);
 
   const fetchLeaderboard = useCallback(async () => {
     try {
@@ -122,9 +130,17 @@ export default function TrenchSniper() {
 
   const shareToX = () => {
     const gameUrl = typeof window !== 'undefined' ? window.location.origin : '';
-    // FIXED: Now correctly includes your Sniper name in the post
-    const shareText = `Sniper: ${username}\nScore: ${score} on Trench Sniper 🎯\n\n"${rugQuote}"\n\nBest: ${highScore}`;
-    const xUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(gameUrl)}`;
+    
+    // VIRAL LOGIC: Determine Title based on Rank
+    let rankTitle = "";
+    if (globalRank && globalRank <= 10) rankTitle = TOP_CLOUT[Math.floor(Math.random() * TOP_CLOUT.length)];
+    else if (globalRank && globalRank <= 100) rankTitle = MID_CLOUT[Math.floor(Math.random() * MID_CLOUT.length)];
+    else rankTitle = LOW_CLOUT[Math.floor(Math.random() * LOW_CLOUT.length)];
+
+    const rankText = globalRank ? ` (Global Rank: #${globalRank})` : "";
+    
+    const shareText = `${rankTitle}\nSniper: ${username}${rankText}\nScore: ${score} on Trench Sniper 🎯\n\n"${rugQuote}"\n\nMastering Web3 terms and dodging rugs. ⚔️\n\nPlay here: ${gameUrl}\n\nBuilt by @MojeebHQ`;
+    const xUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`;
     window.open(xUrl, '_blank');
   };
 
