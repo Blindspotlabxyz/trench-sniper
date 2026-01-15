@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Share2, Skull, Trophy, Target } from 'lucide-react';
+import { Share2, Skull, Trophy } from 'lucide-react';
 
 const BRAND_COLOR = '#4e24cf';
 
@@ -65,7 +65,6 @@ export default function TrenchSniper() {
       }
       setLeaderboard(formatted);
 
-      // Calculate Rank based on Top 100 or list
       if (highScore > 0) {
         const rank = formatted.findIndex(e => e.score <= highScore);
         setGlobalRank(rank !== -1 ? rank + 1 : formatted.length + 1);
@@ -77,12 +76,10 @@ export default function TrenchSniper() {
 
   const triggerGameOver = useCallback(async () => {
     setRugQuote(RUG_MESSAGES[Math.floor(Math.random() * RUG_MESSAGES.length)]);
-    
     if (score > highScore) {
       setHighScore(score);
       localStorage.setItem('trench_highscore', score.toString());
     }
-
     if (score > 0) {
       await fetch('/api/scores', {
         method: 'POST',
@@ -90,7 +87,6 @@ export default function TrenchSniper() {
         body: JSON.stringify({ username, score }),
       });
     }
-
     setGameState('gameOver');
     fetchLeaderboard();
   }, [highScore, score, username, fetchLeaderboard]);
@@ -99,10 +95,9 @@ export default function TrenchSniper() {
     setHasMounted(true);
     const saved = typeof window !== 'undefined' ? localStorage.getItem('trench_highscore') : null;
     if (saved) setHighScore(parseInt(saved));
-    fetchLeaderboard(); // Load LBs on page load
+    fetchLeaderboard(); 
   }, [fetchLeaderboard]);
 
-  // Updated Share to X for PC fix
   const shareToX = () => {
     const gameUrl = typeof window !== 'undefined' ? window.location.origin : '';
     const shareText = `Score: ${score} on Trench Sniper 🎯\n\n"${rugQuote}"\n\nBuilt by @MojeebHQ\n\nBest: ${highScore}`;
@@ -134,7 +129,6 @@ export default function TrenchSniper() {
           if (score >= 30) baseSpeed = 8.0 + (score * 0.05);
           
           const updated = prev.map(t => ({ ...t, y: t.y + baseSpeed }));
-          
           if (updated.some(t => t.y >= 94 && t.type === 'green')) {
             triggerGameOver();
             return [];
@@ -168,6 +162,7 @@ export default function TrenchSniper() {
     } else {
       setScore(s => s + 1);
       setFlash(true);
+      // RESTORED POPUP LOGIC HERE
       setPopup({ term: tile.term, def: DICTIONARY[tile.term] || 'Safe!' });
       setTiles(prev => prev.filter(t => t.id !== tile.id));
     }
@@ -209,15 +204,14 @@ export default function TrenchSniper() {
               ENTER TRENCHES
             </button>
 
-            {/* Identity Screen Leaderboard Preview */}
             <div style={{ background: '#000', borderRadius: '12px', padding: '10px', border: '1px solid #222' }}>
                <p style={{fontSize: '8px', color: '#444', marginBottom: '8px'}}>CURRENT TRENCH LEGENDS</p>
-               {leaderboard.slice(0, 3).map((entry, i) => (
+               {leaderboard.length > 0 ? leaderboard.slice(0, 3).map((entry, i) => (
                  <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#888' }}>
                    <span>{i+1}. {entry.username}</span>
                    <span>{entry.score}</span>
                  </div>
-               ))}
+               )) : <p style={{fontSize: '8px', color: '#333'}}>Connecting to network...</p>}
             </div>
           </div>
         )}
@@ -249,6 +243,19 @@ export default function TrenchSniper() {
                   {tile.term}
                 </div>
               ))}
+
+              {/* RESTORED POPUP UI HERE */}
+              {popup && (
+                <div style={{ 
+                  position: 'absolute', bottom: '15px', left: '15px', right: '15px',
+                  background: 'rgba(0,0,0,0.9)', color: '#fff', padding: '10px', 
+                  zIndex: 100, textAlign: 'center', border: `1px solid ${BRAND_COLOR}`,
+                  pointerEvents: 'none', borderRadius: '12px'
+                }}>
+                  <div style={{ fontWeight: 'bold', color: BRAND_COLOR, fontSize: '0.7rem' }}>{popup.term}</div>
+                  <div style={{ fontSize: '9px', marginTop: '2px', opacity: 0.8 }}>{popup.def}</div>
+                </div>
+              )}
             </div>
           </>
         )}
