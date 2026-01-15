@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Share2, Skull, Trophy, Star, Zap } from 'lucide-react';
+import { Share2, Skull, Trophy, Star, Zap, ShieldCheck } from 'lucide-react';
 
 const BRAND_COLOR = '#4e24cf';
 
@@ -25,23 +25,12 @@ const DICTIONARY: Record<string, string> = {
   'MINTING': 'Generating.', 'PFP': 'Profile Pic.', 'MOONBOY': 'Bullish anon.'
 };
 
-// --- FULL SAVAGE RUG MESSAGES ---
 const RUG_MESSAGES = [
-  "YOU BOUGHT THE TOP.", 
-  "YOU'RE SO DOOMED, PACK EVERYTHING.", 
-  "DON'T SLEEP, WORK HARD.",
-  "YOU RAN OUT OF REACH.", 
-  "ONLY LEGEND HERE, PLS.", 
-  "NOT FOR YAPPERS.",
-  "TO KNOW IS TO BE FREE.", 
-  "WHERE IS YOUR AURA?", 
-  "NO AURA, YOU CAN DO BETTER.",
-  "YOU'RE JUST AN EXIT LIQUIDITY.", 
-  "DEV IS DED. KEK.", 
-  "KEK YOU'RE DED.",
-  "THANK YOU FOR YOUR ATTENTION.", 
-  "EXIT LIQUIDITY DETECTED.", 
-  "THANKS FOR THE SOL, JEET."
+  "YOU BOUGHT THE TOP.", "YOU'RE SO DOOMED, PACK EVERYTHING.", "DON'T SLEEP, WORK HARD.",
+  "YOU RAN OUT OF REACH.", "ONLY LEGEND HERE, PLS.", "NOT FOR YAPPERS.",
+  "TO KNOW IS TO BE FREE.", "WHERE IS YOUR AURA?", "NO AURA, YOU CAN DO BETTER.",
+  "YOU'RE JUST AN EXIT LIQUIDITY.", "DEV IS DED. KEK.", "KEK YOU'RE DED.",
+  "THANK YOU FOR YOUR ATTENTION.", "EXIT LIQUIDITY DETECTED.", "THANKS FOR THE SOL, JEET."
 ];
 
 const TOP_CLOUT = ["TRENCH GOD 👑", "AURA MAXIMIZED ⚡", "LIQUIDITY KING 💎"];
@@ -58,14 +47,13 @@ export default function TrenchSniper() {
   const [flash, setFlash] = useState(false);
   const [rugQuote, setRugQuote] = useState("");
   const [popup, setPopup] = useState<{term: string, def: string} | null>(null);
-  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [globalRank, setGlobalRank] = useState<number | null>(null);
   
   const gameLoopRef = useRef<NodeJS.Timeout | null>(null);
   const tileIdCounter = useRef(0);
 
   useEffect(() => {
-    document.title = "TRENCH SNIPER";
+    document.title = "TRENCH SNIPER | ONCHAIN LBS";
     setHasMounted(true);
     const saved = localStorage.getItem('trench_highscore');
     if (saved) setHighScore(parseInt(saved));
@@ -76,9 +64,8 @@ export default function TrenchSniper() {
     try {
       const res = await fetch('/api/leaderboard');
       const data = await res.json();
-      let formatted: LeaderboardEntry[] = Array.isArray(data) ? (typeof data[0] === 'object' ? data : []) : [];
+      let formatted: LeaderboardEntry[] = Array.isArray(data) ? data : [];
       const sorted = formatted.sort((a, b) => b.score - a.score);
-      setLeaderboard(sorted);
       if (username) {
         const idx = sorted.findIndex(e => e.username.toLowerCase() === username.toLowerCase());
         setGlobalRank(idx !== -1 ? idx + 1 : null);
@@ -88,9 +75,16 @@ export default function TrenchSniper() {
 
   const triggerGameOver = useCallback(async () => {
     setRugQuote(RUG_MESSAGES[Math.floor(Math.random() * RUG_MESSAGES.length)]);
-    if (score > highScore) { setHighScore(score); localStorage.setItem('trench_highscore', score.toString()); }
+    if (score > highScore) { 
+      setHighScore(score); 
+      localStorage.setItem('trench_highscore', score.toString()); 
+    }
     if (score > 0) {
-      await fetch('/api/leaderboard', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, score }) });
+      await fetch('/api/leaderboard', { 
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' }, 
+        body: JSON.stringify({ username, score }) 
+      });
     }
     setGameState('gameOver');
     fetchLeaderboard();
@@ -103,7 +97,7 @@ export default function TrenchSniper() {
     else if (globalRank && globalRank <= 100) rankTitle = MID_CLOUT[Math.floor(Math.random() * MID_CLOUT.length)];
     else rankTitle = LOW_CLOUT[Math.floor(Math.random() * LOW_CLOUT.length)];
 
-    const shareText = `${rankTitle}\nSniper: ${username}\nScore: ${score} on Trench Sniper 🎯\n\n"${rugQuote}"\n\nMastering Web3 terms and dodging rugs. ⚔️\n\nPlay here: ${gameUrl}\n\nBuilt by @MojeebHQ`;
+    const shareText = `${rankTitle}\nSniper: ${username}\nScore: ${score} on Trench Sniper ONCHAIN 🎯\n\n"${rugQuote}"\n\nMastering Web3 terms and dodging rugs. ⚔️\n\nPlay here: ${gameUrl}\n\nBuilt by @MojeebHQ`;
     window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`, '_blank');
   };
 
@@ -111,7 +105,7 @@ export default function TrenchSniper() {
     if (gameState === 'playing' && hasMounted) {
       gameLoopRef.current = setInterval(() => {
         setTiles(prev => {
-          let baseSpeed = 4.0 + (score * 0.09); // Slightly faster scaling for intensity
+          let baseSpeed = 4.2 + (score * 0.09);
           const updated = prev.map(t => ({ ...t, y: t.y + baseSpeed }));
           if (updated.some(t => t.y >= 96 && t.type === 'green')) { triggerGameOver(); return []; }
           if (Math.random() < 0.08) {
@@ -141,13 +135,17 @@ export default function TrenchSniper() {
   return (
     <div style={{ backgroundColor: '#000', color: '#fff', height: '100dvh', fontFamily: 'monospace', display: 'flex', flexDirection: 'column', alignItems: 'center', overflow: 'hidden' }}>
       
-      {/* 1. TOP STATS BAR */}
-      <div style={{ height: '6vh', width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 20px', background: '#050505', borderBottom: '1px solid #111' }}>
-         <div style={{ display: 'flex', gap: '15px', fontSize: '11px', fontWeight: 'bold' }}>
+      {/* 1. HEADER (PB | RANK | ONCHAIN | TITLE) */}
+      <div style={{ height: '7vh', width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 15px', background: '#050505', borderBottom: '1px solid #111' }}>
+         <div style={{ display: 'flex', gap: '12px', fontSize: '10px', fontWeight: 'bold' }}>
             <span style={{color: '#888'}}>PB: <span style={{color: '#fff'}}>{highScore}</span></span>
-            {globalRank && <span style={{color: '#888'}}>RANK: <span style={{color: '#fbbf24'}}>#{globalRank}</span></span>}
+            <span style={{color: '#888'}}>RANK: <span style={{color: '#fbbf24'}}>#{globalRank || '--'}</span></span>
          </div>
-         <div style={{ fontWeight: '900', color: BRAND_COLOR, fontSize: '11px' }}>TRENCH SNIPER</div>
+         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ fontSize: '8px', color: BRAND_COLOR, border: `1px solid ${BRAND_COLOR}44`, padding: '1px 4px', borderRadius: '4px', fontWeight: '900' }}>ONCHAIN</span>
+            <span style={{ fontSize: '8px', color: '#555', border: '1px solid #222', padding: '1px 4px', borderRadius: '4px' }}>LBS</span>
+            <span style={{ fontWeight: '900', color: BRAND_COLOR, fontSize: '11px', letterSpacing: '1px' }}>TRENCH SNIPER</span>
+         </div>
       </div>
 
       {/* 2. INTEL FEED */}
@@ -169,7 +167,7 @@ export default function TrenchSniper() {
       </div>
 
       {/* 3. GAME AREA */}
-      <main style={{ height: '60vh', width: '100%', maxWidth: '420px', position: 'relative', padding: '0 10px' }}>
+      <main style={{ height: '59vh', width: '100%', maxWidth: '420px', position: 'relative', padding: '0 10px' }}>
         {gameState === 'playing' ? (
           <div style={{ width: '100%', height: '100%', border: flash ? `2px solid ${BRAND_COLOR}` : '1px solid #151515', position: 'relative', overflow: 'hidden', background: '#030303', borderRadius: '16px' }}>
              <div style={{ position: 'absolute', top: '10px', right: '15px', fontSize: '24px', fontWeight: 'bold', opacity: 0.2, zIndex: 5 }}>{score}</div>
@@ -186,7 +184,7 @@ export default function TrenchSniper() {
           <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
              {gameState === 'identity' ? (
                <div style={{ width: '100%', border: `1px solid ${BRAND_COLOR}`, padding: '25px', textAlign: 'center', background: '#050505', borderRadius: '20px' }}>
-                  <Zap color={BRAND_COLOR} size={24} style={{margin: '0 auto 10px'}} />
+                  <ShieldCheck color={BRAND_COLOR} size={28} style={{margin: '0 auto 10px'}} />
                   <input style={{ width: '100%', padding: '15px', background: '#000', border: '1px solid #222', color: '#fff', marginBottom: '15px', textAlign: 'center', borderRadius: '10px', outline: 'none' }} placeholder="@X_HANDLE" value={username} onChange={(e) => setUsername(e.target.value)} />
                   <button onClick={() => { if(username) { setGameState('playing'); fetchLeaderboard(); } }} style={{ width: '100%', padding: '15px', background: BRAND_COLOR, color: '#fff', fontWeight: 'bold', borderRadius: '10px' }}>ENTER TRENCHES</button>
                </div>
