@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Share2, Skull, Trophy, Star, Zap, ShieldCheck } from 'lucide-react';
+import { Share2, Skull, Zap, ShieldCheck } from 'lucide-react';
 
 const BRAND_COLOR = '#4e24cf';
 
@@ -33,9 +33,10 @@ const RUG_MESSAGES = [
   "THANK YOU FOR YOUR ATTENTION.", "EXIT LIQUIDITY DETECTED.", "THANKS FOR THE SOL, JEET."
 ];
 
+// --- CLOUT RANKING SYSTEM ---
 const TOP_CLOUT = ["TRENCH GOD 👑", "AURA MAXIMIZED ⚡", "LIQUIDITY KING 💎"];
-const MID_CLOUT = ["WHALE IN TRAINING 🐋", "ALPHA FINDER"];
-const LOW_CLOUT = ["TRENCH GRINDER ⚔️", "EXIT LIQUIDITY 💀"];
+const MID_CLOUT = ["WHALE IN TRAINING 🐋", "ALPHA FINDER 🔎", "DIAMOND HANDS 💎"];
+const LOW_CLOUT = ["TRENCH GRINDER ⚔️", "EXIT LIQUIDITY 💀", "JEET DETECTED 🤡"];
 
 export default function TrenchSniper() {
   const [hasMounted, setHasMounted] = useState(false);
@@ -79,7 +80,7 @@ export default function TrenchSniper() {
       setHighScore(score); 
       localStorage.setItem('trench_highscore', score.toString()); 
     }
-    if (score > 0) {
+    if (score > 0 && username) {
       await fetch('/api/leaderboard', { 
         method: 'POST', 
         headers: { 'Content-Type': 'application/json' }, 
@@ -92,8 +93,15 @@ export default function TrenchSniper() {
 
   const shareToX = () => {
     const gameUrl = typeof window !== 'undefined' ? window.location.origin : 'https://trencher.site';
-    const rankTitle = globalRank && globalRank <= 10 ? TOP_CLOUT[0] : globalRank && globalRank <= 100 ? MID_CLOUT[0] : LOW_CLOUT[0];
-    const shareText = `${rankTitle}\nSniper: ${username}\nScore: ${score} | Rank: #${globalRank || '?'}\n\n"${rugQuote}"\n\nPlay Trench Sniper ONCHAIN: ${gameUrl}\n\nBuilt by @MojeebHQ`;
+    
+    // Logic to select Clout Title based on Score/Rank
+    let titlePool = LOW_CLOUT;
+    if (score >= 50 || (globalRank && globalRank <= 10)) titlePool = TOP_CLOUT;
+    else if (score >= 20 || (globalRank && globalRank <= 50)) titlePool = MID_CLOUT;
+    
+    const cloutTitle = titlePool[Math.floor(Math.random() * titlePool.length)];
+
+    const shareText = `${cloutTitle}\nSniper: ${username}\nScore: ${score} | Rank: #${globalRank || '?'}\n\n"${rugQuote}"\n\nPlay Trench Sniper ONCHAIN: ${gameUrl}\n\nBuilt by @MojeebHQ`;
     window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`, '_blank');
   };
 
@@ -131,7 +139,7 @@ export default function TrenchSniper() {
   return (
     <div style={{ backgroundColor: '#000', color: '#fff', height: '100dvh', fontFamily: 'monospace', display: 'flex', flexDirection: 'column', alignItems: 'center', overflow: 'hidden' }}>
       
-      {/* 1. CLEAN HEADER (PB | RANK | TITLE) */}
+      {/* 1. HEADER */}
       <div style={{ height: '7vh', width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 15px', background: '#050505', borderBottom: '1px solid #111' }}>
          <div style={{ display: 'flex', gap: '15px', fontSize: '11px', fontWeight: 'bold' }}>
             <span style={{color: '#666'}}>PB: <span style={{color: '#fff'}}>{highScore}</span></span>
@@ -140,12 +148,11 @@ export default function TrenchSniper() {
          <div style={{ fontWeight: '900', color: BRAND_COLOR, fontSize: '12px' }}>TRENCH SNIPER</div>
       </div>
 
-      {/* 2. INTEL FEED */}
+      {/* 2. MEANING AREA */}
       <div style={{ height: '12vh', width: '100%', display: 'flex', alignItems: 'center', padding: '5px 15px' }}>
           <div style={{ 
             width: '100%', height: '100%', backgroundColor: '#080808', border: '1px solid #1a1a1a', 
-            borderRadius: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-            padding: '10px', textAlign: 'center'
+            borderRadius: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '10px', textAlign: 'center'
           }}>
             {popup ? (
               <div style={{ animation: 'fadeIn 0.2s ease' }}>
@@ -158,7 +165,7 @@ export default function TrenchSniper() {
           </div>
       </div>
 
-      {/* 3. GAME AREA (60vh) */}
+      {/* 3. MAIN GAME / GAME OVER AREA */}
       <main style={{ height: '60vh', width: '100%', maxWidth: '420px', position: 'relative', padding: '0 10px' }}>
         {gameState === 'playing' ? (
           <div style={{ width: '100%', height: '100%', border: flash ? `2px solid ${BRAND_COLOR}` : '1px solid #151515', position: 'relative', overflow: 'hidden', background: '#030303', borderRadius: '16px' }}>
@@ -185,15 +192,15 @@ export default function TrenchSniper() {
                   <Skull color="#ef4444" style={{margin: '0 auto 5px'}} size={20} />
                   <p style={{ color: '#ef4444', fontSize: '10px', marginBottom: '10px', fontWeight: 'bold' }}>"{rugQuote}"</p>
                   
-                  {/* RESTORED LEADERBOARD TABLE */}
+                  {/* LEADERBOARD TABLE */}
                   <div style={{ flex: 1, overflowY: 'auto', marginBottom: '15px', background: '#000', borderRadius: '8px', padding: '10px', border: '1px solid #111' }}>
                     <table style={{ width: '100%', fontSize: '10px', textAlign: 'left' }}>
                       <thead><tr style={{ color: '#444' }}><th style={{paddingBottom: '5px'}}>RANK</th><th>USER</th><th style={{textAlign: 'right'}}>SCORE</th></tr></thead>
                       <tbody>
-                        {leaderboard.slice(0, 10).map((entry, i) => (
-                          <tr key={i} style={{ color: entry.username === username ? BRAND_COLOR : '#ccc' }}>
+                        {leaderboard.slice(0, 20).map((entry, i) => (
+                          <tr key={i} style={{ color: entry.username.toLowerCase() === username.toLowerCase() ? BRAND_COLOR : '#ccc' }}>
                             <td style={{padding: '4px 0'}}>#{i + 1}</td>
-                            <td>{entry.username.slice(0, 12)}</td>
+                            <td>{entry.username.slice(0, 15)}</td>
                             <td style={{textAlign: 'right'}}>{entry.score}</td>
                           </tr>
                         ))}
@@ -211,7 +218,7 @@ export default function TrenchSniper() {
         )}
       </main>
 
-      {/* 4. FOOTER (ONCHAIN BLINK HERE) */}
+      {/* 4. FOOTER */}
       <footer style={{ height: '21vh', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
         <div style={{ animation: 'blink 2s infinite', fontSize: '9px', color: BRAND_COLOR, border: `1px solid ${BRAND_COLOR}44`, padding: '2px 8px', borderRadius: '4px', fontWeight: '900' }}>ONCHAIN</div>
         <a href="https://blindspotlabs.vercel.app" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
