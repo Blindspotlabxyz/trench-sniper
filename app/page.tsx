@@ -123,16 +123,16 @@ export default function TrenchSniper() {
   return (
     <div style={{ backgroundColor: '#000', color: '#fff', height: '100dvh', fontFamily: 'monospace', display: 'flex', flexDirection: 'column', alignItems: 'center', overflow: 'hidden' }}>
       
-      {/* 1. TOP STATS BAR */}
-      <div style={{ height: '6vh', width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 20px', fontSize: '10px', borderBottom: '1px solid #111' }}>
-         <div style={{ display: 'flex', gap: '10px' }}>
-            <span>PB: <span style={{color: BRAND_COLOR}}>{highScore}</span></span>
-            {globalRank && <span>RANK: <span style={{color: '#fbbf24'}}>#{globalRank}</span></span>}
+      {/* 1. TOP STATS BAR - High Visibility */}
+      <div style={{ height: '6vh', width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 20px', background: '#050505', borderBottom: '1px solid #111' }}>
+         <div style={{ display: 'flex', gap: '15px', fontSize: '11px', fontWeight: 'bold' }}>
+            <span style={{color: '#888'}}>PB: <span style={{color: '#fff'}}>{highScore}</span></span>
+            {globalRank && <span style={{color: '#888'}}>RANK: <span style={{color: '#fbbf24'}}>#{globalRank}</span></span>}
          </div>
-         <div style={{ fontWeight: 'bold', color: BRAND_COLOR, letterSpacing: '1px' }}>TRENCH SNIPER</div>
+         <div style={{ fontWeight: '900', color: BRAND_COLOR, fontSize: '11px' }}>TRENCH SNIPER</div>
       </div>
 
-      {/* 2. INTEL FEED (Meaning) */}
+      {/* 2. INTEL FEED */}
       <div style={{ height: '14vh', width: '100%', display: 'flex', alignItems: 'center', padding: '8px 15px' }}>
           <div style={{ 
             width: '100%', height: '100%', backgroundColor: '#080808', border: '1px solid #1a1a1a', 
@@ -150,11 +150,11 @@ export default function TrenchSniper() {
           </div>
       </div>
 
-      {/* 3. GAME AREA (60vh) */}
+      {/* 3. GAME AREA */}
       <main style={{ height: '60vh', width: '100%', maxWidth: '420px', position: 'relative', padding: '0 10px' }}>
         {gameState === 'playing' ? (
           <div style={{ width: '100%', height: '100%', border: flash ? `2px solid ${BRAND_COLOR}` : '1px solid #151515', position: 'relative', overflow: 'hidden', background: '#030303', borderRadius: '16px' }}>
-             <div style={{ position: 'absolute', top: '10px', right: '15px', fontSize: '20px', fontWeight: 'bold', opacity: 0.3, zIndex: 5 }}>{score}</div>
+             <div style={{ position: 'absolute', top: '10px', right: '15px', fontSize: '24px', fontWeight: 'bold', opacity: 0.2, zIndex: 5 }}>{score}</div>
             {tiles.map(tile => (
               <div key={tile.id} onPointerDown={() => handleSnipe(tile)} style={{
                   position: 'absolute', top: `${tile.y}%`, left: `${tile.lane * 25}%`, width: '23%', padding: '15px 0',
@@ -173,7 +173,7 @@ export default function TrenchSniper() {
                   <button onClick={() => { if(username) { setGameState('playing'); fetchLeaderboard(); } }} style={{ width: '100%', padding: '15px', background: BRAND_COLOR, color: '#fff', fontWeight: 'bold', borderRadius: '10px' }}>ENTER TRENCHES</button>
                </div>
              ) : (
-               <div style={{ width: '100%', border: '1px solid #ef4444', padding: '25px', textAlign: 'center', background: '#050505', borderRadius: '20px', overflowY: 'auto', maxHeight: '100%' }}>
+               <div style={{ width: '100%', border: '1px solid #ef4444', padding: '25px', textAlign: 'center', background: '#050505', borderRadius: '20px' }}>
                   <Skull color="#ef4444" style={{margin: '0 auto 10px'}} />
                   <p style={{ color: '#ef4444', fontSize: '11px', marginBottom: '10px' }}>"{rugQuote}"</p>
                   <p style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '15px' }}>SCORE: {score}</p>
@@ -187,10 +187,12 @@ export default function TrenchSniper() {
         )}
       </main>
 
-      {/* 4. FOOTER (20vh) */}
+      {/* 4. FOOTER - Interactive Links */}
       <footer style={{ height: '20vh', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-        <div style={{ fontSize: '9px', color: '#444', fontWeight: 'bold', letterSpacing: '1px' }}>POWERED BY BLINDSPOT LABS</div>
-        <div style={{ width: '20px', height: '1px', background: '#111' }} />
+        <a href="https://blindspotlabs.vercel.app" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
+           <div style={{ fontSize: '9px', color: '#444', fontWeight: 'bold', letterSpacing: '1px', borderBottom: '1px solid #1a1a1a' }}>POWERED BY BLINDSPOT LABS</div>
+        </a>
+        <div style={{ width: '15px', height: '1px', background: '#111' }} />
         <a href="https://x.com/MojeebHQ" target="_blank" rel="noopener noreferrer" style={{ color: BRAND_COLOR, textDecoration: 'none', fontSize: '10px', fontWeight: 'bold' }}>BUILT BY @MOJEEBHQ</a>
       </footer>
 
