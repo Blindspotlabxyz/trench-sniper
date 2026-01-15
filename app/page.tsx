@@ -1,19 +1,42 @@
 'use client';
+
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Skull, ShieldCheck, X, Trophy } from 'lucide-react';
+import { Share2, Skull, Trophy, ShieldCheck } from 'lucide-react';
 
 const BRAND_COLOR = '#4e24cf';
-const SLANGS = ["YOU GOT RUGGED", "EXIT LIQUIDITY", "DOWN BAD", "PAPER HANDS", "REKT", "COPE HARDER", "DEGEN DOWN", "TOTAL SHILL", "FADED BY DEVS", "PUMP AND DUMPED", "NGMI", "HFSP"];
 
 const DICTIONARY: Record<string, string> = {
   'WAGMI': 'We All Gonna Make It.', 'REKT': 'Total loss.', 'HODL': 'Hold On for Dear Life.',
-  'LFG': 'Lets Go!', 'RUG': 'Rug Pull.', 'MOON': 'Price pumping.',
+  'LFG': 'Lets F***ing Go!', 'RUG': 'Rug Pull.', 'MOON': 'Price pumping.',
   'APE IN': 'Buying without research.', 'FOMO': 'Fear Of Missing Out.', 'WHALE': 'Huge capital.',
   'DEGEN': 'High-risk trader.', 'DIAMOND HANDS': 'Refusing to sell.', 'SAFU': 'Funds are safe.',
   'JEET': 'Selling too fast.', 'SHITCOIN': 'Zero utility coin.', 'YOLO': 'You Only Live Once.',
-  'DEX': 'Exchange.', 'LIQUIDITY': 'Pool funds.', 'MINT': 'Create.',
-  'ALPHA': 'Insider info.', 'BAGHOLDER': 'Holding losers.', 'BTFD': 'Buy The Dip.'
+  'DEX': 'Decentralized Exchange.', 'LIQUIDITY': 'Pool funds.', 'MINT': 'Create NFT.',
+  'ALPHA': 'Insider info.', 'BAGHOLDER': 'Holding losers.', 'BTFD': 'Buy The Dip.',
+  'DYOR': 'Do Your Own Research.', 'FUD': 'Fear Uncertainty Doubt.', 'GAS': 'Fees.',
+  'LAMBO': 'When lambo?', 'NGMI': 'Not Gonna Make It.', 'NORMIE': 'Non-crypto person.',
+  'PUMP': 'Price up.', 'DUMP': 'Price down.', 'SATS': 'Smallest BTC unit.',
+  'STABLE': 'USD pegged.', 'VAPORWARE': 'No product.', 'WEN': 'Asking for dates.',
+  'ZAP': 'Instaswap.', 'DAO': 'Community org.', 'DEFI': 'Finance apps.',
+  'ORACLE': 'Data feed.', 'TVL': 'Total Value Locked.', 'WEB3': 'New internet.',
+  'MINTING': 'Generating.', 'PFP': 'Profile Pic.', 'MOONBOY': 'Bullish anon.'
 };
+
+const RUG_MESSAGES = [
+  "YOU BOUGHT THE TOP.", "YOU'RE SO DOOMED, PACK EVERYTHING.", "DON'T SLEEP, WORK HARD.",
+  "YOU RAN OUT OF REACH.", "ONLY LEGEND HERE, PLS.", "NOT FOR YAPPERS.",
+  "TO KNOW IS TO BE FREE.", "WHERE IS YOUR AURA?", "NO AURA, YOU CAN DO BETTER.",
+  "YOU'RE JUST AN EXIT LIQUIDITY.", "DEV IS DED. KEK.", "KEK YOU'RE DED.",
+  "THANK YOU FOR YOUR ATTENTION.", "EXIT LIQUIDITY DETECTED.", "THANKS FOR THE SOL, JEET."
+];
+
+// VIRAL CLOUT TIERS
+const TOP_CLOUT = ["TRENCH GOD 👑", "AURA MAXIMIZED ⚡", "VITALIK'S CHOSEN ONE", "LIQUIDITY KING 💎", "SMART MONEY 🧠"];
+const MID_CLOUT = ["WHALE IN TRAINING 🐋", "ALPHA FINDER", "GIGA CHAD ENERGY", "DIAMOND HANDED"];
+const LOW_CLOUT = ["TRENCH GRINDER ⚔️", "EXIT LIQUIDITY 💀", "JEET DETECTED", "NORMIE TIER"];
+
+interface Tile { id: number; term: string; type: 'green' | 'red'; lane: number; y: number; }
+interface LeaderboardEntry { username: string; score: number; }
 
 export default function TrenchSniper() {
   const [hasMounted, setHasMounted] = useState(false);
@@ -21,27 +44,40 @@ export default function TrenchSniper() {
   const [username, setUsername] = useState('');
   const [score, setScore] = useState(0);
   const [highScore, setHighScore] = useState(0);
-  const [tiles, setTiles] = useState<any[]>([]);
+  const [tiles, setTiles] = useState<Tile[]>([]);
   const [flash, setFlash] = useState(false);
-  const [popup, setPopup] = useState<any>(null);
-  const [leaderboard, setLeaderboard] = useState<any[]>([]);
+  const [rugQuote, setRugQuote] = useState("");
+  const [popup, setPopup] = useState<{term: string, def: string} | null>(null);
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [globalRank, setGlobalRank] = useState<number | null>(null);
-  const [currentSlang, setCurrentSlang] = useState("");
+  const [isSyncing, setIsSyncing] = useState(false);
 
-  const gameLoopRef = useRef<any>(null);
+  const gameLoopRef = useRef<NodeJS.Timeout | null>(null);
+  const tileIdCounter = useRef(0);
 
   const fetchLeaderboard = useCallback(async () => {
+    setIsSyncing(true);
     try {
       const res = await fetch('/api/leaderboard');
       const data = await res.json();
+      let formatted: LeaderboardEntry[] = [];
       if (Array.isArray(data)) {
-        setLeaderboard(data);
-        if (username) {
-          const idx = data.findIndex(e => e.username?.toLowerCase() === username.toLowerCase());
-          setGlobalRank(idx !== -1 ? idx + 1 : null);
+        if (typeof data[0] === 'object' && data[0] !== null) { formatted = data; } 
+        else {
+          for (let i = 0; i < data.length; i += 2) {
+            formatted.push({ username: data[i], score: Number(data[i+1]) });
+          }
         }
       }
-    } catch (e) { console.error("Sync Error"); }
+      const sorted = formatted.sort((a, b) => b.score - a.score);
+      setLeaderboard(sorted);
+      
+      if (username) {
+        const myIndex = sorted.findIndex(e => e.username.toLowerCase() === username.trim().toLowerCase());
+        setGlobalRank(myIndex !== -1 ? myIndex + 1 : null);
+      }
+    } catch (e) { console.error(e); }
+    finally { setIsSyncing(false); }
   }, [username]);
 
   useEffect(() => {
@@ -52,47 +88,67 @@ export default function TrenchSniper() {
   }, [fetchLeaderboard]);
 
   const triggerGameOver = useCallback(async () => {
-    setCurrentSlang(SLANGS[Math.floor(Math.random() * SLANGS.length)]);
+    setRugQuote(RUG_MESSAGES[Math.floor(Math.random() * RUG_MESSAGES.length)]);
     if (score > highScore) {
       setHighScore(score);
       localStorage.setItem('trench_highscore', score.toString());
     }
     setGameState('gameOver');
     if (score > 0 && username) {
-      await fetch('/api/leaderboard', { 
-        method: 'POST', 
+      await fetch('/api/leaderboard', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, score }) 
+        body: JSON.stringify({ username: username.trim(), score }),
       });
       fetchLeaderboard();
     }
   }, [score, highScore, username, fetchLeaderboard]);
 
   const shareToX = () => {
-    const text = `I just sniped ${score} points in the Trenches! Rank: #${globalRank || 'N/A'}. Come get rekt with me. 🎯🔫`;
-    window.open(`https://x.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent("https://trench-sniper.vercel.app")}`, '_blank');
+    let rankTitle = "";
+    if (globalRank && globalRank <= 10) rankTitle = TOP_CLOUT[Math.floor(Math.random() * TOP_CLOUT.length)];
+    else if (globalRank && globalRank <= 100) rankTitle = MID_CLOUT[Math.floor(Math.random() * MID_CLOUT.length)];
+    else rankTitle = LOW_CLOUT[Math.floor(Math.random() * LOW_CLOUT.length)];
+
+    const rankText = globalRank ? ` (Global Rank: #${globalRank})` : "";
+    
+    const shareText = `${rankTitle}
+Sniper: ${username}${rankText}
+Score: ${score} on Trench Sniper ONCHAIN
+
+"TO KNOW IS TO BE FREE."
+
+Mastering Web3 terms and dodging rugs.
+
+Play here: https://trench-sniper.vercel.app
+
+Built by @MojeebHQ
+Powered by @Blindspotlabs`;
+
+    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`, '_blank');
   };
 
   useEffect(() => {
     if (gameState === 'playing' && hasMounted) {
       gameLoopRef.current = setInterval(() => {
-        setTiles((prev) => {
-          let baseSpeed = 4.2 + (score * 0.08);
+        setTiles(prev => {
+          let baseSpeed = 3.5 + (score * 0.05);
           const updated = prev.map(t => ({ ...t, y: t.y + baseSpeed }));
-          if (updated.some(t => t.y >= 98 && t.type === 'green')) { 
-            clearInterval(gameLoopRef.current);
-            triggerGameOver(); 
-            return []; 
-          }
-          if (Math.random() < 0.08) {
-            const all = Object.keys(DICTIONARY);
-            const isG = Math.random() > 0.45;
-            updated.push({ id: Math.random(), term: isG ? all[Math.floor(Math.random() * all.length)] : 'RUG', type: isG ? 'green' : 'red', lane: Math.floor(Math.random() * 4), y: -10 });
+          if (updated.some(t => t.y >= 94 && t.type === 'green')) { triggerGameOver(); return []; }
+          if (Math.random() < 0.09) {
+            const allTerms = Object.keys(DICTIONARY);
+            const isGreen = Math.random() > 0.4;
+            updated.push({
+              id: tileIdCounter.current++,
+              term: isGreen ? allTerms[Math.floor(Math.random() * allTerms.length)] : 'RUG',
+              type: isGreen ? 'green' : 'red',
+              lane: Math.floor(Math.random() * 4), y: -15
+            });
           }
           return updated.filter(t => t.y < 105);
         });
       }, 50);
-      return () => clearInterval(gameLoopRef.current);
+      return () => { if (gameLoopRef.current) clearInterval(gameLoopRef.current); };
     }
   }, [gameState, hasMounted, score, triggerGameOver]);
 
@@ -100,68 +156,85 @@ export default function TrenchSniper() {
 
   return (
     <div style={{ backgroundColor: '#000', color: '#fff', height: '100vh', width: '100vw', fontFamily: 'monospace', display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'fixed', top: 0, left: 0 }}>
+      
       {/* HEADER */}
       <div style={{ height: '15vh', width: '100%', padding: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-        <h1 style={{ margin: 0, fontSize: '18px', fontWeight: '900', color: BRAND_COLOR, letterSpacing: '4px' }}>TRENCH SNIPER</h1>
-        <div style={{ width: '100%', flex: 1, backgroundColor: '#080808', border: '1px solid #1a1a1a', borderRadius: '8px', marginTop: '5px', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
+          <div style={{ width: '6px', height: '6px', backgroundColor: isSyncing ? '#eab308' : '#ef4444', borderRadius: '50%', animation: 'blink 1.5s infinite' }} />
+          <span style={{ fontSize: '9px', color: '#ef4444', fontWeight: 'bold' }}>ONCHAIN</span>
+        </div>
+        <h1 style={{ margin: 0, fontSize: '22px', fontWeight: '900', color: BRAND_COLOR, letterSpacing: '2px', fontStyle: 'italic' }}>TRENCH SNIPER</h1>
+        <div style={{ width: '100%', flex: 1, backgroundColor: '#080808', border: '1px solid #1a1a1a', borderRadius: '12px', marginTop: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '0 10px' }}>
           {popup ? (
             <div>
-              <div style={{ color: BRAND_COLOR, fontWeight: 'bold', fontSize: '12px' }}>{popup.term}</div>
+              <div style={{ color: BRAND_COLOR, fontWeight: 'bold', fontSize: '11px' }}>{popup.term}</div>
               <div style={{ color: '#666', fontSize: '9px' }}>{popup.def}</div>
             </div>
-          ) : <div style={{ color: '#222', fontSize: '9px' }}>STAY ALERT</div>}
+          ) : <div style={{ color: '#222', fontSize: '10px' }}>SYNCING INTEL...</div>}
         </div>
       </div>
 
-      {/* GAME AREA */}
-      <main style={{ height: '65vh', width: '100%', maxWidth: '420px', margin: '0 auto', position: 'relative' }}>
+      {/* MAIN GAME WINDOW */}
+      <main style={{ height: '60vh', width: '100%', maxWidth: '420px', margin: '0 auto', position: 'relative' }}>
         {gameState === 'playing' ? (
-          <div style={{ width: '100%', height: '100%', border: flash ? `2px solid ${BRAND_COLOR}` : '1px solid #151515', position: 'relative', overflow: 'hidden', background: '#030303', borderRadius: '16px' }}>
+          <div style={{ width: '100%', height: '100%', border: flash ? `2px solid ${BRAND_COLOR}` : '2px solid #151515', position: 'relative', overflow: 'hidden', background: '#030303', borderRadius: '24px' }}>
              <div style={{ position: 'absolute', top: '10px', right: '15px', fontSize: '24px', fontWeight: 'bold', opacity: 0.1 }}>{score}</div>
              {tiles.map((tile) => (
-                <div key={tile.id} onPointerDown={() => tile.type === 'red' ? triggerGameOver() : (setScore(s => s + 1), setFlash(true), setPopup({ term: tile.term, def: DICTIONARY[tile.term] }), setTiles(prev => prev.filter(t => t.id !== tile.id)), setTimeout(() => setFlash(false), 100))} style={{ position: 'absolute', top: `${tile.y}%`, left: `${tile.lane * 25}%`, width: '23%', padding: '15px 0', textAlign: 'center', border: `1px solid ${tile.type === 'green' ? '#22c55e' : '#ef4444'}`, color: tile.type === 'green' ? '#22c55e' : '#ef4444', fontSize: '9px', fontWeight: '900', backgroundColor: 'rgba(0,0,0,0.9)', borderRadius: '6px', cursor: 'pointer', touchAction: 'none' }}>{tile.term}</div>
+                <div key={tile.id} onPointerDown={() => tile.type === 'red' ? triggerGameOver() : (setScore(s => s + 1), setFlash(true), setPopup({ term: tile.term, def: DICTIONARY[tile.term] }), setTiles(prev => prev.filter(t => t.id !== tile.id)), setTimeout(() => setFlash(false), 100))} style={{ position: 'absolute', top: `${tile.y}%`, left: `${tile.lane * 25}%`, width: '23%', padding: '14px 0', textAlign: 'center', border: `1px solid ${tile.type === 'green' ? '#22c55e' : '#ef4444'}`, color: tile.type === 'green' ? '#22c55e' : '#ef4444', fontSize: '8px', fontWeight: '900', backgroundColor: 'rgba(0,0,0,0.95)', borderRadius: '8px', cursor: 'pointer', touchAction: 'none' }}>{tile.term}</div>
              ))}
           </div>
         ) : (
-          <div style={{ height: '100%', padding: '0 10px', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ height: '100%', padding: '0 15px', display: 'flex', flexDirection: 'column' }}>
             {gameState === 'identity' ? (
-              <div style={{ border: `1px solid ${BRAND_COLOR}`, padding: '25px', textAlign: 'center', background: '#050505', borderRadius: '20px' }}>
-                <ShieldCheck color={BRAND_COLOR} size={32} style={{ margin: '0 auto 10px' }} />
-                <input style={{ width: '100%', padding: '15px', background: '#000', border: '1px solid #222', color: '#fff', marginBottom: '15px', textAlign: 'center', borderRadius: '10px' }} placeholder="@X_HANDLE" value={username} onChange={(e) => setUsername(e.target.value)} />
-                <button onClick={() => username && setGameState('playing')} style={{ width: '100%', padding: '15px', background: BRAND_COLOR, color: '#fff', fontWeight: 'bold', borderRadius: '10px' }}>ENTER TRENCHES</button>
+              <div style={{ border: `2px solid ${BRAND_COLOR}`, padding: '30px 20px', textAlign: 'center', background: '#050505', borderRadius: '24px' }}>
+                <ShieldCheck color={BRAND_COLOR} size={40} style={{ margin: '0 auto 15px' }} />
+                <p style={{fontSize: '10px', color: BRAND_COLOR, marginBottom: '10px' }}>@X_HANDLE REQUIRED TO ENTER</p>
+                <input style={{ width: '100%', padding: '15px', background: '#000', border: '1px solid #222', color: BRAND_COLOR, marginBottom: '15px', textAlign: 'center', borderRadius: '12px', fontSize: '18px', fontWeight: 'bold', outline: 'none' }} placeholder="@" value={username} onChange={(e) => setUsername(e.target.value)} />
+                <button onClick={() => username && setGameState('playing')} style={{ width: '100%', padding: '16px', background: BRAND_COLOR, color: '#fff', fontWeight: 'bold', borderRadius: '12px', border: 'none' }}>ENTER TRENCHES</button>
               </div>
             ) : (
-              <div style={{ flex: 1, border: '1px solid #ef4444', padding: '15px', background: '#050505', borderRadius: '20px', display: 'flex', flexDirection: 'column' }}>
+              <div style={{ flex: 1, border: '2px solid #ef4444', padding: '15px', background: '#050505', borderRadius: '24px', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
                 <div style={{ textAlign: 'center', marginBottom: '10px' }}>
-                  <Skull color="#ef4444" size={20} style={{ margin: '0 auto' }} />
-                  <h2 style={{ color: '#ef4444', fontSize: '18px', fontWeight: 'bold' }}>{currentSlang}</h2>
-                  <div style={{ color: '#22c55e', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>
-                    <Trophy size={14} /> PB: {highScore}
-                  </div>
+                  <Skull color="#ef4444" size={24} style={{ margin: '0 auto 10px' }} />
+                  <h2 style={{ color: '#ef4444', fontSize: '0.9rem', fontWeight: 'bold', fontStyle: 'italic' }}>&quot;{rugQuote}&quot;</h2>
+                  <div style={{ color: '#22c55e', fontSize: '16px', fontWeight: 'bold', marginTop: '5px' }}>SCORE: {score}</div>
                 </div>
-                <div style={{ flex: 1, overflowY: 'auto', background: '#000', borderRadius: '8px', padding: '10px' }}>
+                <div style={{ flex: 1, overflowY: 'auto', background: '#000', borderRadius: '12px', padding: '10px', border: '1px solid #111' }}>
                    <table style={{ width: '100%', fontSize: '11px' }}>
-                      <tbody>{leaderboard.slice(0, 10).map((e, i) => (
-                        <tr key={i} style={{ color: e.username?.toLowerCase() === username.toLowerCase() ? BRAND_COLOR : '#ccc' }}>
-                          <td style={{ padding: '3px 0' }}>#{i + 1} {e.username}</td>
-                          <td style={{ textAlign: 'right' }}>{e.score}</td>
+                      <tbody>{leaderboard.slice(0, 50).map((e, i) => (
+                        <tr key={i} style={{ color: e.username?.toLowerCase() === username.toLowerCase() ? BRAND_COLOR : '#ccc', backgroundColor: e.username?.toLowerCase() === username.toLowerCase() ? '#4e24cf11' : 'transparent' }}>
+                          <td style={{ padding: '4px' }}>#{i + 1} {e.username}</td>
+                          <td style={{ textAlign: 'right', fontWeight: 'bold' }}>{e.score}</td>
                         </tr>
                       ))}</tbody>
                    </table>
                 </div>
-                <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
-                  <button onClick={() => { setScore(0); setTiles([]); setGameState('playing'); }} style={{ flex: 2, padding: '12px', background: '#fff', color: '#000', fontWeight: 'bold', borderRadius: '8px' }}>RETRY</button>
-                  <button onClick={shareToX} style={{ flex: 1, padding: '12px', background: '#000', border: '1px solid #333', color: '#fff', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><X size={16} /></button>
+                <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
+                  <button onClick={() => { setScore(0); setTiles([]); setGameState('playing'); }} style={{ flex: 1, padding: '14px', background: '#fff', color: '#000', fontWeight: 'bold', borderRadius: '12px', border: 'none' }}>RETRY</button>
+                  <button onClick={shareToX} style={{ flex: 1, padding: '14px', background: BRAND_COLOR, color: '#fff', fontWeight: 'bold', borderRadius: '12px', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                    <Share2 size={18} /> SHARE CLOUT
+                  </button>
                 </div>
               </div>
             )}
           </div>
         )}
       </main>
-      <footer style={{ height: '20vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ fontSize: '10px', color: '#444' }}>PB: {highScore} | RANK: #{globalRank || '--'}</div>
-        <div style={{ fontSize: '10px', color: BRAND_COLOR, marginTop: '8px', fontWeight: 'bold' }}>BUILT BY @MOJEEBHQ</div>
+
+      {/* FOOTER */}
+      <footer style={{ height: '25vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+        <div style={{ fontSize: '11px', color: '#444', fontWeight: 'bold' }}>PB: {highScore} | GLOBAL RANK: #{globalRank || '--'}</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center' }}>
+            <a href="https://x.com/MojeebHQ" target="_blank" style={{ textDecoration: 'none' }}>
+                <span style={{ fontSize: '10px', color: BRAND_COLOR, fontWeight: '900', borderBottom: `1px solid ${BRAND_COLOR}`, paddingBottom: '2px' }}>BUILT BY @MOJEEBHQ</span>
+            </a>
+            <a href="https://blindspotlabs.vercel.app" target="_blank" style={{ textDecoration: 'none' }}>
+                <span style={{ fontSize: '9px', color: '#333', fontWeight: 'bold' }}>POWERED BY @BLINDSPOTLABS</span>
+            </a>
+        </div>
       </footer>
+
+      <style>{` @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.2; } 100% { opacity: 1; } } `}</style>
     </div>
   );
 }
