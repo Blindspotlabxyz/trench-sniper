@@ -1,32 +1,35 @@
-import { Redis } from '@upstash/redis';
+import { kv } from '@vercel/kv';
 import { NextResponse } from 'next/server';
-
-// This uses the "Locked" variables from your Vercel screenshot
-const redis = new Redis({
-  url: process.env.KV_REST_API_URL,
-  token: process.env.KV_REST_API_TOKEN,
-});
 
 export async function GET() {
   try {
-    const scores = await redis.zrange('trench_sniper_leaderboard', 0, 9, { 
-      rev: true, 
-      withScores: true 
+    // Uses Vercel KV to get the top 100 scores
+    const topScores = await kv.zrange('leaderboard', 0, 99, {
+      rev: true,
+      withScores: true,
     });
-    return NextResponse.json(scores || []);
+
+    const formatted = [];
+    for (let i = 0; i < topScores.length; i += 2) {
+      formatted.push({
+        username: topScores[i] as string,
+        score: topScores[i + 1] as number,
+      });
+    }
+    return NextResponse.json(formatted);
   } catch (error) {
-    return NextResponse.json([]);
+    return NextResponse.json([], { status: 200 }); // Return empty array instead of crashing
   }
 }
 
 export async function POST(req: Request) {
   try {
     const { username, score } = await req.json();
-    if (username && score !== undefined) {
-      await redis.zadd('trench_sniper_leaderboard', { score, member: username });
-    }
+    if (!username || typeof score !== 'number') return NextResponse.json({ error: 'Invalid data' }, { status: 400 });
+
+    await kv.zadd('leaderboard', { score: score, member: username });
     return NextResponse.json({ success: true });
   } catch (error) {
-    return NextResponse.json({ success: false }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to save' }, { status: 500 });
   }
 }
