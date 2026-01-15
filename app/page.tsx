@@ -33,7 +33,6 @@ const RUG_MESSAGES = [
   "THANK YOU FOR YOUR ATTENTION.", "EXIT LIQUIDITY DETECTED.", "THANKS FOR THE SOL, JEET."
 ];
 
-// --- CLOUT RANKING SYSTEM ---
 const TOP_CLOUT = ["TRENCH GOD 👑", "AURA MAXIMIZED ⚡", "LIQUIDITY KING 💎"];
 const MID_CLOUT = ["WHALE IN TRAINING 🐋", "ALPHA FINDER 🔎", "DIAMOND HANDS 💎"];
 const LOW_CLOUT = ["TRENCH GRINDER ⚔️", "EXIT LIQUIDITY 💀", "JEET DETECTED 🤡"];
@@ -93,14 +92,8 @@ export default function TrenchSniper() {
 
   const shareToX = () => {
     const gameUrl = typeof window !== 'undefined' ? window.location.origin : 'https://trencher.site';
-    
-    // Logic to select Clout Title based on Score/Rank
-    let titlePool = LOW_CLOUT;
-    if (score >= 50 || (globalRank && globalRank <= 10)) titlePool = TOP_CLOUT;
-    else if (score >= 20 || (globalRank && globalRank <= 50)) titlePool = MID_CLOUT;
-    
+    let titlePool = score >= 50 ? TOP_CLOUT : score >= 20 ? MID_CLOUT : LOW_CLOUT;
     const cloutTitle = titlePool[Math.floor(Math.random() * titlePool.length)];
-
     const shareText = `${cloutTitle}\nSniper: ${username}\nScore: ${score} | Rank: #${globalRank || '?'}\n\n"${rugQuote}"\n\nPlay Trench Sniper ONCHAIN: ${gameUrl}\n\nBuilt by @MojeebHQ`;
     window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`, '_blank');
   };
@@ -150,10 +143,7 @@ export default function TrenchSniper() {
 
       {/* 2. MEANING AREA */}
       <div style={{ height: '12vh', width: '100%', display: 'flex', alignItems: 'center', padding: '5px 15px' }}>
-          <div style={{ 
-            width: '100%', height: '100%', backgroundColor: '#080808', border: '1px solid #1a1a1a', 
-            borderRadius: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '10px', textAlign: 'center'
-          }}>
+          <div style={{ width: '100%', height: '100%', backgroundColor: '#080808', border: '1px solid #1a1a1a', borderRadius: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '10px', textAlign: 'center' }}>
             {popup ? (
               <div style={{ animation: 'fadeIn 0.2s ease' }}>
                 <span style={{ color: BRAND_COLOR, fontWeight: 'bold', fontSize: '13px', display: 'block' }}>{popup.term}</span>
@@ -171,29 +161,23 @@ export default function TrenchSniper() {
           <div style={{ width: '100%', height: '100%', border: flash ? `2px solid ${BRAND_COLOR}` : '1px solid #151515', position: 'relative', overflow: 'hidden', background: '#030303', borderRadius: '16px' }}>
              <div style={{ position: 'absolute', top: '10px', right: '15px', fontSize: '24px', fontWeight: 'bold', opacity: 0.2, zIndex: 5 }}>{score}</div>
             {tiles.map(tile => (
-              <div key={tile.id} onPointerDown={() => handleSnipe(tile)} style={{
-                  position: 'absolute', top: `${tile.y}%`, left: `${tile.lane * 25}%`, width: '23%', padding: '15px 0',
-                  textAlign: 'center', border: `1px solid ${tile.type === 'green' ? '#22c55e' : '#ef4444'}`,
-                  color: tile.type === 'green' ? '#22c55e' : '#ef4444', fontSize: '10px', fontWeight: '900',
-                  backgroundColor: 'rgba(0,0,0,0.95)', borderRadius: '8px', marginLeft: '1%', zIndex: 10
-              }}>{tile.term}</div>
+              <div key={tile.id} onPointerDown={() => handleSnipe(tile)} style={{ position: 'absolute', top: `${tile.y}%`, left: `${tile.lane * 25}%`, width: '23%', padding: '15px 0', textAlign: 'center', border: `1px solid ${tile.type === 'green' ? '#22c55e' : '#ef4444'}`, color: tile.type === 'green' ? '#22c55e' : '#ef4444', fontSize: '10px', fontWeight: '900', backgroundColor: 'rgba(0,0,0,0.95)', borderRadius: '8px', marginLeft: '1%', zIndex: 10 }}>{tile.term}</div>
             ))}
           </div>
         ) : (
-          <div style={{ height: '100%', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'flex-start', justifyContent: 'center' }}>
              {gameState === 'identity' ? (
-               <div style={{ width: '100%', border: `1px solid ${BRAND_COLOR}`, padding: '25px', textAlign: 'center', background: '#050505', borderRadius: '20px' }}>
+               <div style={{ width: '100%', border: `1px solid ${BRAND_COLOR}`, padding: '25px', textAlign: 'center', background: '#050505', borderRadius: '20px', marginTop: '20px' }}>
                   <ShieldCheck color={BRAND_COLOR} size={28} style={{margin: '0 auto 10px'}} />
                   <input style={{ width: '100%', padding: '15px', background: '#000', border: '1px solid #222', color: '#fff', marginBottom: '15px', textAlign: 'center', borderRadius: '10px', outline: 'none' }} placeholder="@X_HANDLE" value={username} onChange={(e) => setUsername(e.target.value)} />
                   <button onClick={() => { if(username) { setGameState('playing'); fetchLeaderboard(); } }} style={{ width: '100%', padding: '15px', background: BRAND_COLOR, color: '#fff', fontWeight: 'bold', borderRadius: '10px' }}>ENTER TRENCHES</button>
                </div>
              ) : (
-               <div style={{ width: '100%', height: '100%', border: '1px solid #ef4444', padding: '15px', textAlign: 'center', background: '#050505', borderRadius: '20px', display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
+               <div style={{ width: '100%', height: '100%', border: '1px solid #ef4444', padding: '15px', textAlign: 'center', background: '#050505', borderRadius: '20px', display: 'flex', flexDirection: 'column' }}>
                   <Skull color="#ef4444" style={{margin: '0 auto 5px'}} size={20} />
-                  <p style={{ color: '#ef4444', fontSize: '10px', marginBottom: '10px', fontWeight: 'bold' }}>"{rugQuote}"</p>
+                  <p style={{ color: '#ef4444', fontSize: '10px', marginBottom: '8px', fontWeight: 'bold' }}>"{rugQuote}"</p>
                   
-                  {/* LEADERBOARD TABLE */}
-                  <div style={{ flex: 1, overflowY: 'auto', marginBottom: '15px', background: '#000', borderRadius: '8px', padding: '10px', border: '1px solid #111' }}>
+                  <div style={{ flex: 1, overflowY: 'auto', marginBottom: '10px', background: '#000', borderRadius: '8px', padding: '10px', border: '1px solid #111', maxHeight: '250px' }}>
                     <table style={{ width: '100%', fontSize: '10px', textAlign: 'left' }}>
                       <thead><tr style={{ color: '#444' }}><th style={{paddingBottom: '5px'}}>RANK</th><th>USER</th><th style={{textAlign: 'right'}}>SCORE</th></tr></thead>
                       <tbody>
@@ -208,10 +192,12 @@ export default function TrenchSniper() {
                     </table>
                   </div>
 
-                  <button onClick={shareToX} style={{ width: '100%', padding: '10px', background: 'transparent', border: '1px solid #1DA1F2', color: '#1DA1F2', fontWeight: 'bold', marginBottom: '8px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '12px' }}>
-                    <Share2 size={14} /> SHARE CLOUT
-                  </button>
-                  <button onClick={() => { setScore(0); setTiles([]); setGameState('playing'); }} style={{ width: '100%', padding: '12px', background: '#fff', color: '#000', fontWeight: 'bold', borderRadius: '8px', fontSize: '12px' }}>LOCKED IN</button>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <button onClick={shareToX} style={{ width: '100%', padding: '12px', background: 'transparent', border: '1px solid #1DA1F2', color: '#1DA1F2', fontWeight: 'bold', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '12px' }}>
+                      <Share2 size={14} /> SHARE CLOUT
+                    </button>
+                    <button onClick={() => { setScore(0); setTiles([]); setGameState('playing'); }} style={{ width: '100%', padding: '12px', background: '#fff', color: '#000', fontWeight: 'bold', borderRadius: '8px', fontSize: '12px' }}>LOCKED IN</button>
+                  </div>
                </div>
              )}
           </div>
@@ -219,7 +205,7 @@ export default function TrenchSniper() {
       </main>
 
       {/* 4. FOOTER */}
-      <footer style={{ height: '21vh', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+      <footer style={{ height: '21vh', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
         <div style={{ animation: 'blink 2s infinite', fontSize: '9px', color: BRAND_COLOR, border: `1px solid ${BRAND_COLOR}44`, padding: '2px 8px', borderRadius: '4px', fontWeight: '900' }}>ONCHAIN</div>
         <a href="https://blindspotlabs.vercel.app" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
            <div style={{ fontSize: '9px', color: '#444', fontWeight: 'bold', letterSpacing: '1px' }}>POWERED BY BLINDSPOT LABS</div>
