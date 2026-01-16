@@ -24,10 +24,6 @@ const RUG_MESSAGES = [
   "THANK YOU FOR YOUR ATTENTION.", "EXIT LIQUIDITY DETECTED.", "THANKS FOR THE SOL, JEET."
 ];
 
-const TOP_CLOUT = ["TRENCH GOD 👑", "AURA MAXIMIZED ⚡", "VITALIK'S CHOSEN ONE", "LIQUIDITY KING 💎", "SMART MONEY 🧠"];
-const MID_CLOUT = ["WHALE IN TRAINING 🐋", "ALPHA FINDER", "GIGA CHAD ENERGY", "DIAMOND HANDED"];
-const LOW_CLOUT = ["TRENCH GRINDER ⚔️", "EXIT LIQUIDITY 💀", "JEET DETECTED", "NORMIE TIER"];
-
 interface Tile { id: number; term: string; type: 'green' | 'red'; lane: number; y: number; }
 interface LeaderboardEntry { username: string; score: number; }
 
@@ -47,62 +43,39 @@ export default function TrenchSniper() {
   const gameLoopRef = useRef<NodeJS.Timeout | null>(null);
   const tileIdCounter = useRef(0);
 
-  // 1. RE-ENGINEERED BULLETPROOF FETCH
+  // 1. FORCE-REFRESH FETCH (NO CACHE)
   const fetchLeaderboard = useCallback(async () => {
     try {
-      const res = await fetch('/api/leaderboard');
+      // Use cache: 'no-store' to force Next.js to bypass its cache
+      const res = await fetch('/api/leaderboard', { cache: 'no-store' });
       const data = await res.json();
-      let rawList: LeaderboardEntry[] = [];
+      let parsed: LeaderboardEntry[] = [];
 
-      // Logic to handle ANY data format coming from the API
       if (Array.isArray(data)) {
-        if (data.length > 0 && typeof data[0] === 'object' && data[0] !== null) {
-          // Format: [{username: '...', score: 10}]
-          rawList = data.map(item => ({
-            username: String(item.username || item.name || 'ANON'),
-            score: Number(item.score || 0)
-          }));
+        if (data.length > 0 && typeof data[0] === 'object') {
+          parsed = data.map(i => ({ username: i.username || i.name || 'ANON', score: Number(i.score) || 0 }));
         } else {
-          // Format: ['user1', 10, 'user2', 20]
+          // Flat array handling
           for (let i = 0; i < data.length; i += 2) {
-            if (data[i] !== undefined) {
-              rawList.push({
-                username: String(data[i]),
-                score: Number(data[i + 1]) || 0
-              });
-            }
+            if (data[i]) parsed.push({ username: String(data[i]), score: Number(data[i+1]) || 0 });
           }
         }
       }
 
-      // 2. DEDUPLICATE: Keep only the highest score for each user
-      const uniqueMap = new Map<string, number>();
-      rawList.forEach(entry => {
-        const key = entry.username.trim().toLowerCase();
-        if (!uniqueMap.has(key) || entry.score > uniqueMap.get(key)!) {
-          uniqueMap.set(key, entry.score);
-        }
-      });
+      // Sort and deduplicate
+      const sorted = parsed.sort((a, b) => b.score - a.score);
+      setLeaderboard(sorted);
 
-      // 3. SORT & SET
-      const finalSorted = Array.from(uniqueMap.entries())
-        .map(([name, val]) => ({ username: name, score: val }))
-        .sort((a, b) => b.score - a.score);
-
-      setLeaderboard(finalSorted);
-
-      // 4. IMMEDIATE RANK SYNC
+      // 2. CALCULATE RANK
       if (username) {
-        const cleanUser = username.trim().toLowerCase();
-        const foundIndex = finalSorted.findIndex(e => e.username.toLowerCase() === cleanUser);
-        setGlobalRank(foundIndex !== -1 ? foundIndex + 1 : null);
+        const myIdx = sorted.findIndex(e => e.username.toLowerCase().trim() === username.toLowerCase().trim());
+        setGlobalRank(myIdx !== -1 ? myIdx + 1 : null);
       }
     } catch (e) {
-      console.error("Critical Leaderboard Failure:", e);
+      console.error("Leaderboard Error:", e);
     }
   }, [username]);
 
-  // Initial Data Load
   useEffect(() => {
     setHasMounted(true);
     const saved = localStorage.getItem('trench_highscore');
@@ -111,14 +84,11 @@ export default function TrenchSniper() {
   }, [fetchLeaderboard]);
 
   const triggerGameOver = useCallback(async () => {
-    const quote = RUG_MESSAGES[Math.floor(Math.random() * RUG_MESSAGES.length)];
-    setRugQuote(quote);
-    
+    setRugQuote(RUG_MESSAGES[Math.floor(Math.random() * RUG_MESSAGES.length)]);
     if (score > highScore) {
       setHighScore(score);
       localStorage.setItem('trench_highscore', score.toString());
     }
-    
     setGameState('gameOver');
 
     if (score > 0 && username) {
@@ -128,21 +98,15 @@ export default function TrenchSniper() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username: username.trim(), score }),
         });
-        // Wait a tiny bit for DB to settle then fetch
-        setTimeout(() => fetchLeaderboard(), 500);
-      } catch (e) {
-        console.error(e);
-      }
+        // Tiny delay so database update propagates
+        setTimeout(() => fetchLeaderboard(), 800);
+      } catch (e) { console.error(e); }
     }
   }, [score, highScore, username, fetchLeaderboard]);
 
   const shareToX = () => {
-    let title = "";
-    if (globalRank && globalRank <= 10) title = TOP_CLOUT[Math.floor(Math.random() * TOP_CLOUT.length)];
-    else if (globalRank && globalRank <= 100) title = MID_CLOUT[Math.floor(Math.random() * MID_CLOUT.length)];
-    else title = LOW_CLOUT[Math.floor(Math.random() * LOW_CLOUT.length)];
-    const rankText = globalRank ? ` (Rank #${globalRank})` : "";
-    const shareText = `${title}\nSniper: ${username}${rankText}\nScore: ${score} on Trench Sniper ONCHAIN\n\n"${rugQuote}"\n\nMastering Web3 terms and dodging rugs.\n\nPlay here: https://trench-sniper.vercel.app\n\nBuilt by @MojeebHQ`;
+    const rankMsg = globalRank ? ` (Rank #${globalRank})` : "";
+    const shareText = `TRENCH SNIPER ONCHAIN\nSniper: ${username}${rankMsg}\nScore: ${score}\n\n"${rugQuote}"\n\nPlay: https://trench-sniper.vercel.app\nBy @MojeebHQ`;
     window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`, '_blank');
   };
 
@@ -177,10 +141,6 @@ export default function TrenchSniper() {
       
       {/* HEADER */}
       <div style={{ height: '15vh', width: '100%', padding: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
-          <div style={{ width: '6px', height: '6px', backgroundColor: '#ef4444', borderRadius: '50%', animation: 'blink 1.5s infinite' }} />
-          <span style={{ fontSize: '9px', color: '#ef4444', fontWeight: 'bold' }}>ONCHAIN</span>
-        </div>
         <h1 style={{ margin: 0, fontSize: '22px', fontWeight: '900', color: BRAND_COLOR, letterSpacing: '2px', fontStyle: 'italic' }}>TRENCH SNIPER</h1>
         <div style={{ width: '100%', flex: 1, backgroundColor: '#080808', border: '1px solid #1a1a1a', borderRadius: '12px', marginTop: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '0 5px' }}>
           {popup ? (
@@ -192,7 +152,7 @@ export default function TrenchSniper() {
         </div>
       </div>
 
-      {/* GAME WINDOW */}
+      {/* MAIN GAME */}
       <main style={{ height: '60vh', width: '100%', maxWidth: '420px', margin: '0 auto', position: 'relative' }}>
         {gameState === 'playing' ? (
           <div style={{ width: '100%', height: '100%', border: flash ? `2px solid ${BRAND_COLOR}` : '2px solid #151515', position: 'relative', overflow: 'hidden', background: '#030303', borderRadius: '24px' }}>
@@ -213,7 +173,7 @@ export default function TrenchSniper() {
               <div style={{ flex: 1, border: '2px solid #ef4444', padding: '15px', background: '#050505', borderRadius: '24px', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
                 <div style={{ textAlign: 'center', marginBottom: '10px' }}>
                   <Skull color="#ef4444" size={24} style={{ margin: '0 auto 5px' }} />
-                  <h2 style={{ color: '#ef4444', fontSize: '0.85rem', fontWeight: 'bold', fontStyle: 'italic', margin: '5px 0' }}>&quot;{rugQuote}&quot;</h2>
+                  <h2 style={{ color: '#ef4444', fontSize: '0.85rem', fontWeight: 'bold', fontStyle: 'italic', margin: '5px 0' }}>{rugQuote}</h2>
                   <div style={{ color: '#22c55e', fontSize: '16px', fontWeight: 'bold' }}>SCORE: {score}</div>
                 </div>
                 <div style={{ flex: 1, overflowY: 'auto', background: '#000', borderRadius: '12px', padding: '10px', border: '1px solid #111' }}>
@@ -223,14 +183,12 @@ export default function TrenchSniper() {
                           <td style={{ padding: '4px' }}>#{i + 1} {e.username}</td>
                           <td style={{ textAlign: 'right', fontWeight: 'bold' }}>{e.score}</td>
                         </tr>
-                      )) : <tr><td colSpan={2} style={{textAlign:'center', color:'#333', padding:'40px'}}>LOADING TRENCHES...</td></tr>}</tbody>
+                      )) : <tr><td colSpan={2} style={{textAlign:'center', color:'#333', padding:'20px'}}>FETCHING DATA...</td></tr>}</tbody>
                    </table>
                 </div>
                 <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
-                  <button onClick={() => { setScore(0); setTiles([]); setGameState('playing'); }} style={{ flex: 1, padding: '14px', background: '#fff', color: '#000', fontWeight: 'bold', borderRadius: '12px', border: 'none' }}>LOCKED IN AGAIN</button>
-                  <button onClick={shareToX} style={{ flex: 1, padding: '14px', background: BRAND_COLOR, color: '#fff', fontWeight: 'bold', borderRadius: '12px', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                    <Share2 size={18} /> JEET TO X
-                  </button>
+                  <button onClick={() => { setScore(0); setTiles([]); setGameState('playing'); }} style={{ flex: 1, padding: '14px', background: '#fff', color: '#000', fontWeight: 'bold', borderRadius: '12px', border: 'none' }}>TRY AGAIN</button>
+                  <button onClick={shareToX} style={{ flex: 1, padding: '14px', background: BRAND_COLOR, color: '#fff', fontWeight: 'bold', borderRadius: '12px', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}><Share2 size={18} /> SHARE</button>
                 </div>
               </div>
             )}
@@ -240,21 +198,15 @@ export default function TrenchSniper() {
 
       {/* FOOTER */}
       <footer style={{ height: '25vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
-        <div style={{ fontSize: '10px', color: '#555', fontWeight: 'bold', textAlign: 'center', lineHeight: '1.4' }}>
+        <div style={{ fontSize: '10px', color: '#555', fontWeight: 'bold', textAlign: 'center' }}>
           PERSONAL BEST: {highScore} <br/> 
           GLOBAL RANK: {globalRank ? `#${globalRank}` : '--'}
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center' }}>
-            <a href="https://x.com/MojeebHQ" target="_blank" style={{ textDecoration: 'none' }}>
-                <span style={{ fontSize: '10px', color: BRAND_COLOR, fontWeight: '900', borderBottom: `1px solid ${BRAND_COLOR}` }}>BUILT BY @MOJEEBHQ</span>
-            </a>
-            <a href="https://blindspotlabs.vercel.app" target="_blank" style={{ textDecoration: 'none' }}>
-                <span style={{ fontSize: '9px', color: '#333', fontWeight: 'bold' }}>POWERED BY @BLINDSPOTLABS</span>
-            </a>
+            <span style={{ fontSize: '10px', color: BRAND_COLOR, fontWeight: '900' }}>@MOJEEBHQ</span>
+            <span style={{ fontSize: '9px', color: '#333' }}>BLINDSPOT LABS</span>
         </div>
       </footer>
-
-      <style>{` @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.2; } 100% { opacity: 1; } } `}</style>
     </div>
   );
 }
