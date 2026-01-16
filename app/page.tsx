@@ -47,38 +47,54 @@ export default function TrenchSniper() {
   const gameLoopRef = useRef<NodeJS.Timeout | null>(null);
   const tileIdCounter = useRef(0);
 
-  // FETCH LEADERBOARD
+  // 1. BULLETPROOF FETCH
   const fetchLeaderboard = useCallback(async () => {
     try {
       const res = await fetch('/api/leaderboard');
       const data = await res.json();
-      let formatted: LeaderboardEntry[] = [];
+      let rawEntries: LeaderboardEntry[] = [];
+
+      // Handle both Object array and Flat array (Redis style)
       if (Array.isArray(data)) {
-        if (typeof data[0] === 'object' && data[0] !== null) { 
-          formatted = data; 
+        if (data.length > 0 && typeof data[0] === 'object') {
+          rawEntries = data;
         } else {
           for (let i = 0; i < data.length; i += 2) {
-            formatted.push({ username: String(data[i]), score: Number(data[i+1]) });
+            if (data[i]) {
+              rawEntries.push({ username: String(data[i]), score: Number(data[i+1]) || 0 });
+            }
           }
         }
       }
-      
-      const uniqueMap = new Map();
-      formatted.forEach(entry => {
+
+      // Deduplicate and Sort
+      const uniqueMap = new Map<string, number>();
+      rawEntries.forEach(entry => {
         const name = entry.username.toLowerCase().trim();
-        if (!uniqueMap.has(name) || entry.score > uniqueMap.get(name).score) {
-          uniqueMap.set(name, entry);
+        if (!uniqueMap.has(name) || entry.score > uniqueMap.get(name)!) {
+          uniqueMap.set(name, entry.score);
         }
       });
 
-      const sorted = Array.from(uniqueMap.values()).sort((a, b) => b.score - a.score);
+      const sorted = Array.from(uniqueMap.entries())
+        .map(([username, score]) => ({ username, score }))
+        .sort((a, b) => b.score - a.score);
+
       setLeaderboard(sorted);
-    } catch (e) { 
-      console.error("Leaderboard fetch error:", e); 
+    } catch (e) {
+      console.error("Leaderboard error:", e);
     }
   }, []);
 
-  // INITIAL LOAD
+  // 2. RANK CALCULATION ENGINE
+  useEffect(() => {
+    if (username && leaderboard.length > 0) {
+      const cleanUser = username.toLowerCase().trim();
+      const myIndex = leaderboard.findIndex(e => e.username.toLowerCase().trim() === cleanUser);
+      setGlobalRank(myIndex !== -1 ? myIndex + 1 : null);
+    }
+  }, [username, leaderboard]);
+
   useEffect(() => {
     setHasMounted(true);
     const saved = localStorage.getItem('trench_highscore');
@@ -86,18 +102,6 @@ export default function TrenchSniper() {
     fetchLeaderboard();
   }, [fetchLeaderboard]);
 
-  // SYNC GLOBAL RANK
-  useEffect(() => {
-    if (username && leaderboard.length > 0) {
-      const cleanUser = username.toLowerCase().trim();
-      const myIdx = leaderboard.findIndex(e => e.username.toLowerCase().trim() === cleanUser);
-      setGlobalRank(myIdx !== -1 ? myIdx + 1 : null);
-    } else {
-      setGlobalRank(null);
-    }
-  }, [username, leaderboard]);
-
-  // GAME OVER LOGIC
   const triggerGameOver = useCallback(async () => {
     const quote = RUG_MESSAGES[Math.floor(Math.random() * RUG_MESSAGES.length)];
     setRugQuote(quote);
@@ -116,27 +120,23 @@ export default function TrenchSniper() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username: username.trim(), score }),
         });
-        fetchLeaderboard(); // Refresh after posting to update ranks
+        await fetchLeaderboard();
       } catch (e) {
-        console.error("Score submission error:", e);
+        console.error(e);
       }
     }
   }, [score, highScore, username, fetchLeaderboard]);
 
-  // X SHARING
   const shareToX = () => {
     let title = "";
     if (globalRank && globalRank <= 10) title = TOP_CLOUT[Math.floor(Math.random() * TOP_CLOUT.length)];
     else if (globalRank && globalRank <= 100) title = MID_CLOUT[Math.floor(Math.random() * MID_CLOUT.length)];
     else title = LOW_CLOUT[Math.floor(Math.random() * LOW_CLOUT.length)];
-
     const rankText = globalRank ? ` (Rank #${globalRank})` : "";
     const shareText = `${title}\nSniper: ${username}${rankText}\nScore: ${score} on Trench Sniper ONCHAIN\n\n"${rugQuote}"\n\nMastering Web3 terms and dodging rugs.\n\nPlay here: https://trench-sniper.vercel.app\n\nBuilt by @MojeebHQ`;
-
     window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`, '_blank');
   };
 
-  // GAME LOOP
   useEffect(() => {
     if (gameState === 'playing' && hasMounted) {
       gameLoopRef.current = setInterval(() => {
@@ -173,7 +173,7 @@ export default function TrenchSniper() {
           <span style={{ fontSize: '9px', color: '#ef4444', fontWeight: 'bold' }}>ONCHAIN</span>
         </div>
         <h1 style={{ margin: 0, fontSize: '22px', fontWeight: '900', color: BRAND_COLOR, letterSpacing: '2px', fontStyle: 'italic' }}>TRENCH SNIPER</h1>
-        <div style={{ width: '100%', flex: 1, backgroundColor: '#080808', border: '1px solid #1a1a1a', borderRadius: '12px', marginTop: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
+        <div style={{ width: '100%', flex: 1, backgroundColor: '#080808', border: '1px solid #1a1a1a', borderRadius: '12px', marginTop: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '0 5px' }}>
           {popup ? (
             <div>
               <div style={{ color: BRAND_COLOR, fontWeight: 'bold', fontSize: '11px' }}>{popup.term}</div>
@@ -209,12 +209,12 @@ export default function TrenchSniper() {
                 </div>
                 <div style={{ flex: 1, overflowY: 'auto', background: '#000', borderRadius: '12px', padding: '10px', border: '1px solid #111' }}>
                    <table style={{ width: '100%', fontSize: '11px' }}>
-                      <tbody>{leaderboard.slice(0, 50).map((e, i) => (
+                      <tbody>{leaderboard.length > 0 ? leaderboard.slice(0, 50).map((e, i) => (
                         <tr key={i} style={{ color: e.username?.toLowerCase().trim() === username.toLowerCase().trim() ? BRAND_COLOR : '#ccc' }}>
                           <td style={{ padding: '4px' }}>#{i + 1} {e.username}</td>
                           <td style={{ textAlign: 'right', fontWeight: 'bold' }}>{e.score}</td>
                         </tr>
-                      ))}</tbody>
+                      )) : <tr><td colSpan={2} style={{textAlign:'center', color:'#333', padding:'20px'}}>SYNCHRONIZING INTEL...</td></tr>}</tbody>
                    </table>
                 </div>
                 <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
@@ -231,7 +231,10 @@ export default function TrenchSniper() {
 
       {/* FOOTER */}
       <footer style={{ height: '25vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
-        <div style={{ fontSize: '11px', color: '#444', fontWeight: 'bold' }}>PB: {highScore} | GLOBAL RANK: #{globalRank || '--'}</div>
+        <div style={{ fontSize: '11px', color: '#444', fontWeight: 'bold', textAlign: 'center' }}>
+          PERSONAL BEST: {highScore} <br/> 
+          GLOBAL RANK: #{globalRank || '--'}
+        </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center' }}>
             <a href="https://x.com/MojeebHQ" target="_blank" style={{ textDecoration: 'none' }}>
                 <span style={{ fontSize: '10px', color: BRAND_COLOR, fontWeight: '900', borderBottom: `1px solid ${BRAND_COLOR}` }}>BUILT BY @MOJEEBHQ</span>
