@@ -47,16 +47,18 @@ export default function TrenchSniper() {
   const gameLoopRef = useRef<NodeJS.Timeout | null>(null);
   const tileIdCounter = useRef(0);
 
+  // FETCH LEADERBOARD
   const fetchLeaderboard = useCallback(async () => {
     try {
       const res = await fetch('/api/leaderboard');
       const data = await res.json();
       let formatted: LeaderboardEntry[] = [];
       if (Array.isArray(data)) {
-        if (typeof data[0] === 'object') { formatted = data; } 
-        else {
+        if (typeof data[0] === 'object' && data[0] !== null) { 
+          formatted = data; 
+        } else {
           for (let i = 0; i < data.length; i += 2) {
-            formatted.push({ username: data[i], score: Number(data[i+1]) });
+            formatted.push({ username: String(data[i]), score: Number(data[i+1]) });
           }
         }
       }
@@ -71,14 +73,12 @@ export default function TrenchSniper() {
 
       const sorted = Array.from(uniqueMap.values()).sort((a, b) => b.score - a.score);
       setLeaderboard(sorted);
-      
-      if (username) {
-        const myIdx = sorted.findIndex(e => e.username.toLowerCase() === username.toLowerCase().trim());
-        setGlobalRank(myIdx !== -1 ? myIdx + 1 : null);
-      }
-    } catch (e) { console.error(e); }
-  }, [username]);
+    } catch (e) { 
+      console.error("Leaderboard fetch error:", e); 
+    }
+  }, []);
 
+  // INITIAL LOAD
   useEffect(() => {
     setHasMounted(true);
     const saved = localStorage.getItem('trench_highscore');
@@ -86,6 +86,18 @@ export default function TrenchSniper() {
     fetchLeaderboard();
   }, [fetchLeaderboard]);
 
+  // SYNC GLOBAL RANK
+  useEffect(() => {
+    if (username && leaderboard.length > 0) {
+      const cleanUser = username.toLowerCase().trim();
+      const myIdx = leaderboard.findIndex(e => e.username.toLowerCase().trim() === cleanUser);
+      setGlobalRank(myIdx !== -1 ? myIdx + 1 : null);
+    } else {
+      setGlobalRank(null);
+    }
+  }, [username, leaderboard]);
+
+  // GAME OVER LOGIC
   const triggerGameOver = useCallback(async () => {
     const quote = RUG_MESSAGES[Math.floor(Math.random() * RUG_MESSAGES.length)];
     setRugQuote(quote);
@@ -98,15 +110,20 @@ export default function TrenchSniper() {
     setGameState('gameOver');
 
     if (score > 0 && username) {
-      await fetch('/api/leaderboard', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: username.trim(), score }),
-      });
-      fetchLeaderboard();
+      try {
+        await fetch('/api/leaderboard', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: username.trim(), score }),
+        });
+        fetchLeaderboard(); // Refresh after posting to update ranks
+      } catch (e) {
+        console.error("Score submission error:", e);
+      }
     }
   }, [score, highScore, username, fetchLeaderboard]);
 
+  // X SHARING
   const shareToX = () => {
     let title = "";
     if (globalRank && globalRank <= 10) title = TOP_CLOUT[Math.floor(Math.random() * TOP_CLOUT.length)];
@@ -114,12 +131,12 @@ export default function TrenchSniper() {
     else title = LOW_CLOUT[Math.floor(Math.random() * LOW_CLOUT.length)];
 
     const rankText = globalRank ? ` (Rank #${globalRank})` : "";
-    
     const shareText = `${title}\nSniper: ${username}${rankText}\nScore: ${score} on Trench Sniper ONCHAIN\n\n"${rugQuote}"\n\nMastering Web3 terms and dodging rugs.\n\nPlay here: https://trench-sniper.vercel.app\n\nBuilt by @MojeebHQ`;
 
     window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`, '_blank');
   };
 
+  // GAME LOOP
   useEffect(() => {
     if (gameState === 'playing' && hasMounted) {
       gameLoopRef.current = setInterval(() => {
@@ -193,7 +210,7 @@ export default function TrenchSniper() {
                 <div style={{ flex: 1, overflowY: 'auto', background: '#000', borderRadius: '12px', padding: '10px', border: '1px solid #111' }}>
                    <table style={{ width: '100%', fontSize: '11px' }}>
                       <tbody>{leaderboard.slice(0, 50).map((e, i) => (
-                        <tr key={i} style={{ color: e.username?.toLowerCase() === username.toLowerCase() ? BRAND_COLOR : '#ccc' }}>
+                        <tr key={i} style={{ color: e.username?.toLowerCase().trim() === username.toLowerCase().trim() ? BRAND_COLOR : '#ccc' }}>
                           <td style={{ padding: '4px' }}>#{i + 1} {e.username}</td>
                           <td style={{ textAlign: 'right', fontWeight: 'bold' }}>{e.score}</td>
                         </tr>
