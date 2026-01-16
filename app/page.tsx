@@ -47,54 +47,62 @@ export default function TrenchSniper() {
   const gameLoopRef = useRef<NodeJS.Timeout | null>(null);
   const tileIdCounter = useRef(0);
 
-  // 1. BULLETPROOF FETCH
+  // 1. RE-ENGINEERED BULLETPROOF FETCH
   const fetchLeaderboard = useCallback(async () => {
     try {
       const res = await fetch('/api/leaderboard');
       const data = await res.json();
-      let rawEntries: LeaderboardEntry[] = [];
+      let rawList: LeaderboardEntry[] = [];
 
-      // Handle both Object array and Flat array (Redis style)
+      // Logic to handle ANY data format coming from the API
       if (Array.isArray(data)) {
-        if (data.length > 0 && typeof data[0] === 'object') {
-          rawEntries = data;
+        if (data.length > 0 && typeof data[0] === 'object' && data[0] !== null) {
+          // Format: [{username: '...', score: 10}]
+          rawList = data.map(item => ({
+            username: String(item.username || item.name || 'ANON'),
+            score: Number(item.score || 0)
+          }));
         } else {
+          // Format: ['user1', 10, 'user2', 20]
           for (let i = 0; i < data.length; i += 2) {
-            if (data[i]) {
-              rawEntries.push({ username: String(data[i]), score: Number(data[i+1]) || 0 });
+            if (data[i] !== undefined) {
+              rawList.push({
+                username: String(data[i]),
+                score: Number(data[i + 1]) || 0
+              });
             }
           }
         }
       }
 
-      // Deduplicate and Sort
+      // 2. DEDUPLICATE: Keep only the highest score for each user
       const uniqueMap = new Map<string, number>();
-      rawEntries.forEach(entry => {
-        const name = entry.username.toLowerCase().trim();
-        if (!uniqueMap.has(name) || entry.score > uniqueMap.get(name)!) {
-          uniqueMap.set(name, entry.score);
+      rawList.forEach(entry => {
+        const key = entry.username.trim().toLowerCase();
+        if (!uniqueMap.has(key) || entry.score > uniqueMap.get(key)!) {
+          uniqueMap.set(key, entry.score);
         }
       });
 
-      const sorted = Array.from(uniqueMap.entries())
-        .map(([username, score]) => ({ username, score }))
+      // 3. SORT & SET
+      const finalSorted = Array.from(uniqueMap.entries())
+        .map(([name, val]) => ({ username: name, score: val }))
         .sort((a, b) => b.score - a.score);
 
-      setLeaderboard(sorted);
+      setLeaderboard(finalSorted);
+
+      // 4. IMMEDIATE RANK SYNC
+      if (username) {
+        const cleanUser = username.trim().toLowerCase();
+        const foundIndex = finalSorted.findIndex(e => e.username.toLowerCase() === cleanUser);
+        setGlobalRank(foundIndex !== -1 ? foundIndex + 1 : null);
+      }
     } catch (e) {
-      console.error("Leaderboard error:", e);
+      console.error("Critical Leaderboard Failure:", e);
     }
-  }, []);
+  }, [username]);
 
-  // 2. RANK CALCULATION ENGINE
-  useEffect(() => {
-    if (username && leaderboard.length > 0) {
-      const cleanUser = username.toLowerCase().trim();
-      const myIndex = leaderboard.findIndex(e => e.username.toLowerCase().trim() === cleanUser);
-      setGlobalRank(myIndex !== -1 ? myIndex + 1 : null);
-    }
-  }, [username, leaderboard]);
-
+  // Initial Data Load
   useEffect(() => {
     setHasMounted(true);
     const saved = localStorage.getItem('trench_highscore');
@@ -120,7 +128,8 @@ export default function TrenchSniper() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username: username.trim(), score }),
         });
-        await fetchLeaderboard();
+        // Wait a tiny bit for DB to settle then fetch
+        setTimeout(() => fetchLeaderboard(), 500);
       } catch (e) {
         console.error(e);
       }
@@ -210,11 +219,11 @@ export default function TrenchSniper() {
                 <div style={{ flex: 1, overflowY: 'auto', background: '#000', borderRadius: '12px', padding: '10px', border: '1px solid #111' }}>
                    <table style={{ width: '100%', fontSize: '11px' }}>
                       <tbody>{leaderboard.length > 0 ? leaderboard.slice(0, 50).map((e, i) => (
-                        <tr key={i} style={{ color: e.username?.toLowerCase().trim() === username.toLowerCase().trim() ? BRAND_COLOR : '#ccc' }}>
+                        <tr key={i} style={{ color: e.username.toLowerCase().trim() === username.toLowerCase().trim() ? BRAND_COLOR : '#ccc' }}>
                           <td style={{ padding: '4px' }}>#{i + 1} {e.username}</td>
                           <td style={{ textAlign: 'right', fontWeight: 'bold' }}>{e.score}</td>
                         </tr>
-                      )) : <tr><td colSpan={2} style={{textAlign:'center', color:'#333', padding:'20px'}}>SYNCHRONIZING INTEL...</td></tr>}</tbody>
+                      )) : <tr><td colSpan={2} style={{textAlign:'center', color:'#333', padding:'40px'}}>LOADING TRENCHES...</td></tr>}</tbody>
                    </table>
                 </div>
                 <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
@@ -231,9 +240,9 @@ export default function TrenchSniper() {
 
       {/* FOOTER */}
       <footer style={{ height: '25vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
-        <div style={{ fontSize: '11px', color: '#444', fontWeight: 'bold', textAlign: 'center' }}>
+        <div style={{ fontSize: '10px', color: '#555', fontWeight: 'bold', textAlign: 'center', lineHeight: '1.4' }}>
           PERSONAL BEST: {highScore} <br/> 
-          GLOBAL RANK: #{globalRank || '--'}
+          GLOBAL RANK: {globalRank ? `#${globalRank}` : '--'}
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center' }}>
             <a href="https://x.com/MojeebHQ" target="_blank" style={{ textDecoration: 'none' }}>
