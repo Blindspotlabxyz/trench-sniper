@@ -202,8 +202,8 @@ export default function TrenchSniper() {
                    </table>
                 </div>
                 <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
-                  <button onClick={() => { setScore(0); setTiles([]); setGameState('playing'); }} style={{ flex: 1, padding: '14px', background: '#fff', color: '#000', fontWeight: 'bold', borderRadius: '12px', border: 'none' }}>TRY AGAIN</button>
-                  <button onClick={shareToX} style={{ flex: 1, padding: '14px', background: BRAND_COLOR, color: '#fff', fontWeight: 'bold', borderRadius: '12px', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}><Share2 size={18} /> SHARE</button>
+                  <button onClick={() => { setScore(0); setTiles([]); setGameState('playing'); }} style={{ flex: 1, padding: '14px', background: '#fff', color: '#000', fontWeight: 'bold', borderRadius: '12px', border: 'none' }}>LOCKED IN AGAIN</button>
+                  <button onClick={shareToX} style={{ flex: 1, padding: '14px', background: BRAND_COLOR, color: '#fff', fontWeight: 'bold', borderRadius: '12px', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}><Share2 size={18} /> JEET TO X</button>
                 </div>
               </div>
             )}
