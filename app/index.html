@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trench Sniper | Capture the Alpha, Avoid the Rug</title>
+
+    <meta name="description" content="Trench Sniper: The high-stakes CT slang game where you don't read definitions—you earn them. Capture the Green Alpha tiles, avoid the Red Rugs, and survive the trenches.">
+    <meta name="keywords" content="Trench Sniper, CT Slang, Crypto Education, Alpha, Rugged, Tech Entrepreneur, Educational Competition">
+    <meta name="author" content="Trench">
+
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://trench.mojeeb.xyz/">
+    <meta property="og:title" content="Trench Sniper - Education Disguised as Competition">
+    <meta property="og:description" content="Crypto doesn’t teach you gently. Master the culture through consequences. High-speed onboarding for the modern Guardian and Tech Entrepreneur.">
+    <meta property="og:image" content="https://trench.mojeeb.xyz/trench-preview.jpg">
+
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://trench.mojeeb.xyz/">
+    <meta property="twitter:title" content="Trench Sniper: Don't just learn the slang. Earn it.">
+    <meta property="twitter:description" content="I saw the idea on X. I didn't wait to capture the Aura. Play Trench Sniper: Green for Alpha, Red for the Rug.">
+    <meta property="twitter:image" content="https://trench.mojeeb.xyz/trench-preview.jpg">
+
+    <script>
+        function shareToSocial(platform, customText) {
+            const url = encodeURIComponent(window.location.href);
+            const defaultText = "I'm dodging rugs in the Trenches. Can you capture the Alpha?";
+            const text = encodeURIComponent(customText || defaultText);
+            
+            let shareUrl = '';
+            switch(platform) {
+                case 'twitter':
+                    shareUrl = `https://twitter.com/intent/tweet?url=${url}&text=${text}`;
+                    break;
+                case 'facebook':
+                    shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${url}`;
+                    break;
+                case 'linkedin':
+                    shareUrl = `https://www.linkedin.com/shareArticle?mini=true&url=${url}&title=${text}`;
+                    break;
+            }
+            
+            if(shareUrl) window.open(shareUrl, '_blank');
+        }
+
+       
+        function shareLoss(score) {
+            const msg = `I just got rugged at ${score} points in the Trench. Don't miss the next drop!`;
+            shareToSocial('twitter', msg);
+        }
+    </script>
+</head>
+<body>
+    </body>
+</html>
