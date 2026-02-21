@@ -23,7 +23,7 @@ export const metadata: Metadata = {
     siteName: "Trench Sniper",
     images: [
       {
-        url: "/og-image.jpg", 
+        url: "/og-trench.png", 
         width: 1200,
         height: 630,
         alt: "Trench Sniper Gameplay Preview",
@@ -36,7 +36,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "TRENCH SNIPER: Don't just learn the slang. Earn it.",
     description: "The high-stakes CT slang game for the modern Guardian. No hand-holding. Just consequences.",
-    images: ["/og-image.jpg"],
+    images: ["/og-trench.png"],
   },
 };
 
